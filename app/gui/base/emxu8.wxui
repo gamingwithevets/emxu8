@@ -1,0 +1,600 @@
+<?xml version="1.0"?>
+<wxUiEditorData
+  data_version="16">
+  <node
+    class="Project"
+    art_directory="res"
+    internationalize="1"
+    base_directory="."
+    derived_directory=".."
+    src_preamble="/*@@   emX-U8 - generated GUI code@@    Copyright (C) 2025 GamingWithEvets Inc.@@@@    This program is free software: you can redistribute it and/or modify@@    it under the terms of the GNU General Public License as published by@@    the Free Software Foundation, either version 3 of the License, or@@    (at your option) any later version.@@@@    This program is distributed in the hope that it will be useful,@@    but WITHOUT ANY WARRANTY; without even the implied warranty of@@    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the@@    GNU General Public License for more details.@@@@    You should have received a copy of the GNU General Public License@@    along with this program.  If not, see &lt;https://www.gnu.org/licenses/>.@@*/"
+    wxWidgets_version="3.2">
+    <node
+      class="wxDialog"
+      class_name="AboutDialogBase"
+      style="wxDEFAULT_DIALOG_STYLE|wxMINIMIZE_BOX"
+      title="About emX-U8"
+      minimum_size="-1,-1d"
+      size="500,500"
+      base_file="about"
+      derived_class_name="AboutDialog"
+      derived_file="../about">
+      <node
+        class="wxBoxSizer"
+        orientation="wxVERTICAL"
+        var_name="sizer">
+        <node
+          class="wxStaticText"
+          class_access="none"
+          label="emX-U8"
+          style="wxALIGN_CENTER_HORIZONTAL"
+          var_name="head"
+          font="normal size,,bold"
+          alignment="wxALIGN_CENTER"
+          borders="" />
+        <node
+          class="wxStaticText"
+          class_access="none"
+          label="Yet another ROHM nX-U8/100 emulator&#10;"
+          var_name="desc"
+          alignment="wxALIGN_CENTER"
+          borders="" />
+        <node
+          class="wxStaticText"
+          class_access="public:"
+          label=""
+          style="wxALIGN_CENTER_HORIZONTAL"
+          var_name="m_version"
+          alignment="wxALIGN_CENTER"
+          borders="" />
+        <node
+          class="wxHtmlWindow"
+          html_content="&lt;p style=&quot;text-align: center;&quot;>&#10;This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.&lt;br>&lt;br>&#10;This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.&lt;br>&lt;br>&#10;You should have received a copy of the GNU General Public License along with this program. If not, see &lt;a href=&quot;https://www.gnu.org/licenses/&quot;>https://www.gnu.org/licenses/&lt;/a>.&#10;&lt;/p>"
+          style="wxHW_NO_SELECTION"
+          var_name="license"
+          size="-1,-1d"
+          alignment="wxALIGN_CENTER"
+          borders=""
+          flags="wxEXPAND"
+          proportion="1"
+          wxEVT_HTML_LINK_CLICKED="[this](wxHtmlLinkEvent&amp; event)@@{@@wxLaunchDefaultBrowser(event.GetLinkInfo().GetHref());@@}" />
+        <node
+          class="wxButton"
+          default="1"
+          label="OK"
+          alignment="wxALIGN_CENTER"
+          borders=""
+          wxEVT_BUTTON="[this](wxCommandEvent&amp;)@@{@@EndModal(0);@@}" />
+      </node>
+    </node>
+    <node
+      class="wxDialog"
+      class_name="DebuggerBase"
+      style="wxDEFAULT_DIALOG_STYLE|wxDIALOG_NO_PARENT|wxMINIMIZE_BOX"
+      title="Debugger"
+      maximum_size="-1,-1"
+      minimum_size="-1,-1"
+      pos="-1,-1d"
+      size="-1,-1d"
+      base_file="debugger"
+      derived_class_name="Debugger"
+      derived_file="../debugger">
+      <node
+        class="wxBoxSizer"
+        minimum_size="-1,-1d">
+        <node
+          class="wxBoxSizer"
+          orientation="wxVERTICAL"
+          var_name="col0_sizer"
+          minimum_size="-1,-1d">
+          <node
+            class="wxBoxSizer"
+            orientation="wxVERTICAL"
+            var_name="disas_sizer"
+            minimum_size="800,300d"
+            flags="wxEXPAND">
+            <node
+              class="wxStaticText"
+              class_access="none"
+              label="Disassembly"
+              var_name="disas_head"
+              font="normal size,,bold"
+              alignment="wxALIGN_CENTER"
+              borders="" />
+            <node
+              class="wxTextCtrl"
+              style="wxTE_MULTILINE|wxTE_READONLY|wxTE_NO_VSCROLL"
+              var_name="m_disas"
+              font="teletype,10"
+              minimum_size="-1,-1d"
+              size="-1,-1d"
+              borders=""
+              flags="wxEXPAND"
+              proportion="1" />
+          </node>
+          <node
+            class="wxBoxSizer"
+            orientation="wxVERTICAL"
+            var_name="regs_sizer"
+            minimum_size="800,300d"
+            flags="wxEXPAND">
+            <node
+              class="wxBoxSizer"
+              var_name="stepbuttons_sizer"
+              alignment="wxALIGN_CENTER">
+              <node
+                class="wxButton"
+                class_access="public:"
+                label="Run [F9]"
+                var_name="m_btn_run"
+                disabled="1"
+                borders="" />
+              <node
+                class="wxButton"
+                class_access="public:"
+                label="Step Into [F7]"
+                var_name="m_btn_stepinto"
+                disabled="1"
+                borders="" />
+              <node
+                class="wxButton"
+                class_access="public:"
+                label="Step Over [F8]"
+                var_name="m_btn_stepover"
+                disabled="1"
+                borders="" />
+            </node>
+            <node
+              class="wxBoxSizer"
+              class_access="protected:"
+              var_name="m_r_sizer"
+              alignment="wxALIGN_CENTER"
+              flags="wxEXPAND" />
+            <node
+              class="wxBoxSizer"
+              var_name="sde_sizer"
+              flags="wxEXPAND">
+              <node
+                class="spacer"
+                proportion="1" />
+              <node
+                class="wxBoxSizer"
+                var_name="csrpc_sizer">
+                <node
+                  class="wxStaticText"
+                  class_access="none"
+                  label="CSR:PC  "
+                  var_name="csrpc_text"
+                  alignment="wxALIGN_CENTER"
+                  borders="" />
+                <node
+                  class="wxTextCtrl"
+                  var_name="m_csr"
+                  derived_class="RegTextCtrl"
+                  derived_header="regtextctrl.h"
+                  derived_params="{false, 1}"
+                  disabled="1"
+                  font="teletype,10"
+                  minimum_size="10,-1d"
+                  borders="" />
+                <node
+                  class="wxStaticText"
+                  class_access="none"
+                  label=" : "
+                  var_name="csrpc_sep"
+                  alignment="wxALIGN_CENTER"
+                  borders="" />
+                <node
+                  class="wxTextCtrl"
+                  var_name="m_pc"
+                  derived_class="RegTextCtrl"
+                  derived_header="regtextctrl.h"
+                  derived_params="{true, 4}"
+                  disabled="1"
+                  font="teletype,10"
+                  minimum_size="25,-1d"
+                  borders="" />
+              </node>
+              <node
+                class="wxBoxSizer"
+                var_name="sp_sizer">
+                <node
+                  class="wxStaticText"
+                  class_access="none"
+                  label="SP  "
+                  var_name="sp_text"
+                  alignment="wxALIGN_CENTER"
+                  borders="" />
+                <node
+                  class="wxTextCtrl"
+                  var_name="m_sp"
+                  derived_class="RegTextCtrl"
+                  derived_header="regtextctrl.h"
+                  derived_params="{false, 4}"
+                  disabled="1"
+                  font="teletype,10"
+                  minimum_size="25,-1d"
+                  borders="" />
+              </node>
+              <node
+                class="wxBoxSizer"
+                var_name="dsr_sizer">
+                <node
+                  class="wxStaticText"
+                  class_access="none"
+                  label="DSR  "
+                  var_name="dsr_text"
+                  minimum_size="-1,-1d"
+                  alignment="wxALIGN_CENTER"
+                  borders="" />
+                <node
+                  class="wxTextCtrl"
+                  var_name="m_dsr"
+                  derived_class="RegTextCtrl"
+                  derived_header="regtextctrl.h"
+                  disabled="1"
+                  font="teletype,10"
+                  minimum_size="15,-1d"
+                  borders="" />
+              </node>
+              <node
+                class="wxBoxSizer"
+                var_name="ea_sizer">
+                <node
+                  class="wxStaticText"
+                  class_access="none"
+                  label="EA  "
+                  var_name="ea_text"
+                  minimum_size="-1,-1d"
+                  alignment="wxALIGN_CENTER"
+                  borders="" />
+                <node
+                  class="wxTextCtrl"
+                  var_name="m_ea"
+                  derived_class="RegTextCtrl"
+                  derived_header="regtextctrl.h"
+                  derived_params="{false, 4}"
+                  disabled="1"
+                  font="teletype,10"
+                  minimum_size="25,-1d"
+                  borders="" />
+              </node>
+              <node
+                class="spacer"
+                proportion="1" />
+            </node>
+            <node
+              class="wxCheckBox"
+              label="Use the current value of DSR in the next instruction"
+              var_name="m_next_dsr"
+              derived_class="RegCheckBox"
+              derived_header="regcheckbox.h"
+              disabled="1"
+              alignment="wxALIGN_CENTER" />
+            <node
+              class="wxBoxSizer"
+              var_name="psw_sizer"
+              flags="wxEXPAND">
+              <node
+                class="spacer"
+                proportion="1" />
+              <node
+                class="wxStaticText"
+                class_access="none"
+                label="PSW  "
+                var_name="psw_text"
+                derived_header="regtextctrl.h"
+                minimum_size="-1,-1d"
+                alignment="wxALIGN_CENTER"
+                borders="" />
+              <node
+                class="wxTextCtrl"
+                var_name="m_psw"
+                derived_class="RegTextCtrl"
+                derived_header="regtextctrl.h"
+                disabled="1"
+                font="teletype,10"
+                minimum_size="15,-1d"
+                alignment="wxALIGN_CENTER"
+                borders="" />
+              <node
+                class="wxBoxSizer"
+                var_name="psw_flags_sizer">
+                <node
+                  class="wxCheckBox"
+                  label="C"
+                  var_name="m_psw_c"
+                  derived_class="RegCheckBox"
+                  derived_header="regcheckbox.h"
+                  disabled="1"
+                  alignment="wxALIGN_CENTER"
+                  borders="" />
+                <node
+                  class="wxCheckBox"
+                  label="Z"
+                  var_name="m_psw_z"
+                  derived_class="RegCheckBox"
+                  derived_header="regcheckbox.h"
+                  disabled="1"
+                  alignment="wxALIGN_CENTER"
+                  borders="" />
+                <node
+                  class="wxCheckBox"
+                  label="S"
+                  var_name="m_psw_s"
+                  derived_class="RegCheckBox"
+                  derived_header="regcheckbox.h"
+                  disabled="1"
+                  alignment="wxALIGN_CENTER"
+                  borders="" />
+                <node
+                  class="wxCheckBox"
+                  label="OV"
+                  var_name="m_psw_ov"
+                  derived_class="RegCheckBox"
+                  derived_header="regcheckbox.h"
+                  disabled="1"
+                  alignment="wxALIGN_CENTER"
+                  borders="" />
+                <node
+                  class="wxCheckBox"
+                  label="MIE"
+                  var_name="m_psw_mie"
+                  derived_class="RegCheckBox"
+                  derived_header="regcheckbox.h"
+                  disabled="1"
+                  alignment="wxALIGN_CENTER"
+                  borders="" />
+                <node
+                  class="wxCheckBox"
+                  label="HC"
+                  var_name="m_psw_hc"
+                  derived_class="RegCheckBox"
+                  derived_header="regcheckbox.h"
+                  disabled="1"
+                  alignment="wxALIGN_CENTER"
+                  borders="" />
+                <node
+                  class="wxTextCtrl"
+                  var_name="m_psw_elevel"
+                  derived_class="RegTextCtrl"
+                  derived_header="regtextctrl.h"
+                  derived_params="{false, 1, true}"
+                  disabled="1"
+                  font="teletype,10"
+                  minimum_size="10,-1d"
+                  alignment="wxALIGN_CENTER"
+                  borders="" />
+                <node
+                  class="wxStaticText"
+                  class_access="none"
+                  label="  ELEVEL"
+                  var_name="psw_elevel_text"
+                  alignment="wxALIGN_CENTER"
+                  borders="" />
+              </node>
+              <node
+                class="spacer"
+                proportion="1" />
+            </node>
+            <node
+              class="wxBoxSizer"
+              class_access="protected:"
+              var_name="m_lr_sizer"
+              alignment="wxALIGN_CENTER"
+              flags="wxEXPAND" />
+            <node
+              class="wxBoxSizer"
+              class_access="protected:"
+              var_name="m_epsw_sizer"
+              alignment="wxALIGN_CENTER"
+              flags="wxEXPAND" />
+          </node>
+        </node>
+        <node
+          class="wxBoxSizer"
+          orientation="wxVERTICAL"
+          var_name="col1_sizer">
+          <node
+            class="wxBoxSizer"
+            orientation="wxVERTICAL"
+            var_name="call_sizer"
+            minimum_size="400,300d"
+            flags="wxEXPAND">
+            <node
+              class="wxStaticText"
+              class_access="none"
+              label="Call stack"
+              style="wxALIGN_CENTER_HORIZONTAL"
+              var_name="call_head"
+              font="normal size,,bold"
+              size="-1,-1d"
+              alignment="wxALIGN_CENTER"
+              borders="" />
+            <node
+              class="wxStaticText"
+              class_access="none"
+              label="(Note: May differ from real stack data!)"
+              style="wxALIGN_CENTER_HORIZONTAL"
+              var_name="call_sub"
+              font="normal size,italic"
+              size="-1,-1d"
+              alignment="wxALIGN_CENTER"
+              borders="" />
+            <node
+              class="wxTextCtrl"
+              style="wxTE_MULTILINE|wxTE_READONLY"
+              var_name="m_call_stack"
+              font="teletype,10"
+              borders=""
+              flags="wxEXPAND"
+              proportion="1" />
+          </node>
+          <node
+            class="wxBoxSizer"
+            orientation="wxVERTICAL"
+            var_name="stack_sizer"
+            minimum_size="400,300d"
+            flags="wxEXPAND">
+            <node
+              class="wxStaticText"
+              class_access="none"
+              label="Raw stack data"
+              var_name="stack_text"
+              font="normal size,,bold"
+              alignment="wxALIGN_CENTER" />
+            <node
+              class="wxStaticText"
+              class_access="none"
+              label="#     Address  Value   Bytes  Source"
+              var_name="stack_head"
+              font="modern,10,,bold"
+              foreground_colour="#0000FF"
+              border_size="4"
+              borders="wxLEFT" />
+            <node
+              class="wxTextCtrl"
+              style="wxTE_MULTILINE|wxTE_READONLY"
+              var_name="m_stack_raw"
+              font="teletype,10"
+              borders=""
+              flags="wxEXPAND"
+              proportion="1" />
+          </node>
+        </node>
+      </node>
+    </node>
+    <node
+      class="wxDialog"
+      class_name="BrkpointBase"
+      style="wxDEFAULT_DIALOG_STYLE|wxDIALOG_NO_PARENT|wxMINIMIZE_BOX"
+      title="Breakpoint Manager"
+      size="-1,-1d"
+      base_file="brkpoint"
+      derived_class_name="Brkpoint"
+      derived_file="brkpoint">
+      <node
+        class="wxBoxSizer"
+        class_access="protected:"
+        orientation="wxVERTICAL"
+        var_name="m_sizer"
+        minimum_size="800,600d"
+        flags="wxEXPAND">
+        <node
+          class="wxStaticText"
+          class_access="none"
+          label="Breakpoint list"
+          var_name="head"
+          font="normal size,,bold"
+          alignment="wxALIGN_CENTER" />
+        <node
+          class="wxBoxSizer"
+          var_name="button_sizer"
+          alignment="wxALIGN_CENTER">
+          <node
+            class="wxButton"
+            label="Add breakpoint"
+            var_name="m_btn_add"
+            wxEVT_BUTTON="OnBtnAdd" />
+          <node
+            class="wxButton"
+            label="Delete all"
+            var_name="m_btn_clear"
+            wxEVT_BUTTON="OnBtnClear" />
+        </node>
+      </node>
+    </node>
+    <node
+      class="PanelForm"
+      class_name="BrkpointPanelBase"
+      mockup_size="-1,-1"
+      base_file="brkpoint_panel"
+      derived_class_name="BrkpointPanel"
+      derived_file="brkpoint_panel">
+      <node
+        class="wxBoxSizer"
+        minimum_size="800,-1d"
+        flags="wxEXPAND">
+        <node
+          class="wxCheckBox"
+          checked="1"
+          label=""
+          var_name="m_enabled"
+          derived_class="RegCheckBox"
+          derived_header="regcheckbox.h"
+          alignment="wxALIGN_CENTER" />
+        <node
+          class="wxBoxSizer"
+          var_name="csrpc_sizer">
+          <node
+            class="wxTextCtrl"
+            var_name="m_csr"
+            derived_class="RegTextCtrl"
+            derived_header="regtextctrl.h"
+            derived_params="{false, 1}"
+            font="teletype,10"
+            minimum_size="15,-1d"
+            borders="" />
+          <node
+            class="wxStaticText"
+            class_access="none"
+            label=" : "
+            var_name="csrpc_sep"
+            alignment="wxALIGN_CENTER"
+            borders="" />
+          <node
+            class="wxTextCtrl"
+            var_name="m_pc"
+            derived_class="RegTextCtrl"
+            derived_header="regtextctrl.h"
+            derived_params="{true, 4}"
+            font="teletype,10"
+            minimum_size="25,-1d"
+            borders="" />
+        </node>
+        <node
+          class="spacer"
+          proportion="1" />
+        <node
+          class="wxBoxSizer"
+          var_name="type_sizer"
+          alignment="wxALIGN_CENTER">
+          <node
+            class="wxRadioButton"
+            label="Read"
+            style="wxRB_GROUP"
+            var_name="m_radio_type1"
+            disabled="1"
+            alignment="wxALIGN_CENTER"
+            borders=""
+            wxEVT_RADIOBUTTON="OnRadioType1" />
+          <node
+            class="wxRadioButton"
+            label="Write"
+            var_name="m_radio_type2"
+            disabled="1"
+            alignment="wxALIGN_CENTER"
+            borders=""
+            wxEVT_RADIOBUTTON="OnRadioType2" />
+          <node
+            class="wxRadioButton"
+            checked="1"
+            label="Execute (Fetch)"
+            var_name="m_radio_type0"
+            alignment="wxALIGN_CENTER"
+            borders=""
+            wxEVT_RADIOBUTTON="OnRadioType0" />
+        </node>
+        <node
+          class="spacer"
+          width="10" />
+        <node
+          class="wxButton"
+          class_access="public:"
+          label=" X "
+          style="wxBU_EXACTFIT"
+          var_name="m_btn_delete" />
+      </node>
+    </node>
+  </node>
+</wxUiEditorData>
