@@ -165,14 +165,14 @@ int U8Core::ReadDataMemory(uint16_t addr, const uint8_t segment, uint16_t size, 
 
 	if (segment == 0 && addr >= 0xf000) {
 		for (uint16_t i = 0; i < size; i++) {
-			uint16_t a = addr - 0xf000 + i;
-			if (a < 0xf000) {
+			if (addr + i < 0xf000) {
 				addr += i;
 				size -= i;
 				out += i;
 				break;
 			}
-			out[i] = sfrs_read[a] ? sfrs_read[a](this, a) : 0;
+			uint16_t a = addr - 0xf000 + i;
+			out[i] = sfrs_read[a] ? sfrs_read[a](this, a) : sfrs[a];
 		}
 		return 0;
 	}
@@ -300,7 +300,7 @@ void U8Core::RegisterPeripheral(U8Peripheral *obj) {
 void U8Core::Reset() {
 	{
 		std::lock_guard lock(mutex);
-		memset(r, 0, sizeof(elr));
+		memset(r, 0, sizeof(r));
 		pc = ReadCodeMemory(2, 0);
 		csr = 0;
 		memset(elr, 0, sizeof(elr));
@@ -311,7 +311,6 @@ void U8Core::Reset() {
 		dsr = 0;
 		ClearPipeline();
 	}
-	memset(sfrs, 0, sizeof(sfrs));
 	cycle_count = 0;
 	interrupter->mask_int = true;
 	interrupter->callstack.clear();
@@ -320,18 +319,35 @@ void U8Core::Reset() {
 	active = true;
 }
 
-unsigned int U8Core::Tick() {
-	std::lock_guard lock(mutex);
+void U8Core::RequestReset() {
+	reset_requested = true;
+}
+
+
+unsigned int U8Core::Tick(const bool *run_cond) {
+	if (reset_requested) {
+		Reset();
+		reset_requested = false;
+		return 0;
+	}
 	unsigned int cycles = 0;
+	std::lock_guard lock(mutex);
 	pc &= 0xfffe;
-	if (active) {
-		fetcher->Tick();
-		prev_csr_pc = executor->cur_pc;
-		decoder->Tick();
-		cycles = executor->Tick();
+	for (auto &p : peripherals) cycles += p->Tick();
+	bool tick = run_cond ? *run_cond : true;
+	if (active && tick) {
+		if (executor->task_running) {
+			executor->Tick();
+			cycles = 1;
+		} else {
+			fetcher->Tick();
+			prev_csr_pc = executor->cur_pc;
+			decoder->Tick();
+			executor->Tick();
+			cycles = 1;
+		}
 	}
 	if (coprocessor) cycles += coprocessor->Tick();
-	for (auto &p : peripherals) cycles += p->Tick();
 	cycle_count += cycles;
 	return cycles;
 }

@@ -14,7 +14,13 @@ set(FRONTEND_SOURCES main.cpp
 		gui/brkpoint.cpp
 		gui/base/brkpoint.cpp
 		gui/base/brkpoint_panel.cpp
-		peripheral/clockgen.cpp)
+		peripheral/clockgen.cpp
+		peripheral/tbc.cpp
+		peripheral/standby.cpp
+		peripheral/timer.cpp
+		gui/base/hexview.cpp
+		gui/hexed.cpp
+		peripheral/keyboard.cpp)
 
 if(WIN32)
 	list(APPEND FRONTEND_SOURCES msw/app.rc)

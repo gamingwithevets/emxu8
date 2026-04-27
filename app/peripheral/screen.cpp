@@ -30,15 +30,37 @@ void ScreenSFRWrite(emxu8::U8Core *core, uint16_t addr, uint8_t val) {
 	}
 }
 
-Screen::Screen(emxu8::U8Core *core) : U8Peripheral(core) {
+Screen::Screen(emxu8::U8Core *core, Config *_config) : U8Peripheral(core) {
 	screen_ptr = this;
+	config = _config;
 
 	width = 96;
 	height = 32;
 	row_bytes = 12;
 	stride_bytes = 16;
 
-	img_status_bar = IMG_Load("images/interface_es_bar.png");
+	status_bar_bits.push_back({0x0, 4}); // [S]
+	status_bar_bits.push_back({0x0, 2}); // [A]
+	status_bar_bits.push_back({0x1, 4}); // M
+	status_bar_bits.push_back({0x1, 1}); // STO
+	status_bar_bits.push_back({0x2, 6}); // RCL
+	status_bar_bits.push_back({0x3, 6}); // STAT   | SD
+	status_bar_bits.push_back({0x4, 7}); // CMPLX  | REG  | 360
+	status_bar_bits.push_back({0x5, 6}); // MAT    | FMLA | SI
+	if (config->hardware_id == HW_ES && config->is_5800p)
+		status_bar_bits.push_back({0x5, 4}); //   | PRGM
+	status_bar_bits.push_back({0x5, 1}); // VCT    | END  | DMY
+	status_bar_bits.push_back({0x7, 5}); // [D]
+	status_bar_bits.push_back({0x7, 1}); // [R]
+	status_bar_bits.push_back({0x8, 4}); // [G]
+	status_bar_bits.push_back({0x8, 0}); // FIX
+	status_bar_bits.push_back({0x9, 5}); // SCI
+	status_bar_bits.push_back({0xa, 6}); // Math
+	status_bar_bits.push_back({0xa, 3}); // ▼
+	status_bar_bits.push_back({0xb, 7}); // ▲
+	status_bar_bits.push_back({0xb, 4}); // Disp
+
+	img_status_bar = IMG_Load(config->status_bar_path.c_str());
 	screen_s = SDL_CreateSurface(width * 3, height * 3, SDL_PIXELFORMAT_ARGB8888);
 	SDL_FillSurfaceRect(screen_s, nullptr, NO_COLOR);
 
@@ -46,18 +68,31 @@ Screen::Screen(emxu8::U8Core *core) : U8Peripheral(core) {
 }
 
 void Screen::Reset() {
+	SDL_FillSurfaceRect(screen_s, nullptr, NO_COLOR);
 }
 
 void Screen::Present(SDL_Renderer *renderer) {
+	if (!config) return;
+
 	SDL_FRect rect;
 	SDL_FRect rect2;
 	SDL_Texture *img_status_bar_t = SDL_CreateTextureFromSurface(renderer, img_status_bar);
-	rect = {58, 128, static_cast<float>(img_status_bar->w), static_cast<float>(img_status_bar->h)};
-	SDL_RenderTexture(renderer, img_status_bar_t, nullptr, &rect);
+	for (int i = 0; i < status_bar_bits.size(); i++)
+		if (core->sfrs[0x800+status_bar_bits[i].idx] & 1 << status_bar_bits[i].bit) {
+			SDL_FRect srcfrect;
+			rect = {
+				static_cast<float>(config->screen_tl_w + config->status_bar_crops[i].x),
+				static_cast<float>(config->screen_tl_h + config->status_bar_crops[i].y),
+				static_cast<float>(config->status_bar_crops[i].w),
+				static_cast<float>(config->status_bar_crops[i].h)
+			};
+			SDL_RectToFRect(&config->status_bar_crops[i], &srcfrect);
+			SDL_RenderTexture(renderer, img_status_bar_t, &srcfrect, &rect);
+		}
 
 	auto *screen_t = SDL_CreateTextureFromSurface(renderer, screen_s);
-	rect = {58, 140, 96*3, 31*3};
-	rect2 = {0, 3, 96*3, 31*3};
+	rect = {static_cast<float>(config->screen_tl_w), static_cast<float>(config->screen_tl_h + img_status_bar->h), 96*3, 31*3};
+	rect2 = {0, static_cast<float>(config->pix_h), 96*static_cast<float>(config->pix_w), 31*static_cast<float>(config->pix_h)};
 	SDL_RenderTexture(renderer, screen_t, &rect2, &rect);
 
 	SDL_DestroyTexture(screen_t);

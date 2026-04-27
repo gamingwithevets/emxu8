@@ -9,7 +9,7 @@
 
 /*
 emX-U8 - generated GUI code
-Copyright (C) 2025 GamingWithEvets Inc.
+Copyright (C) 2025-2026 GamingWithEvets Inc.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

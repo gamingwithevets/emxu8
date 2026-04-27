@@ -9,7 +9,7 @@
 namespace emxu8 {
 	class U8Core;
 
-	class U8Interrupter {
+	class EMXU8_API U8Interrupter {
 		U8Core *core;
 
 	protected:

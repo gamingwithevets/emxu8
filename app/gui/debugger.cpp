@@ -14,9 +14,10 @@ Debugger::Debugger(emxu8::U8Core *_core, bool single_step) : core(_core) {
 	Create(nullptr);
 	SetStepButtons(single_step);
 
-	wxAcceleratorEntry entries[2];
+	wxAcceleratorEntry entries[3];
 	entries[0].Set(wxACCEL_NORMAL, WXK_F9, m_btn_run->GetId());
 	entries[1].Set(wxACCEL_NORMAL, WXK_F7, m_btn_stepinto->GetId());
+	entries[2].Set(wxACCEL_NORMAL, WXK_F8, m_btn_stepover->GetId());
 	wxAcceleratorTable accel(sizeof(entries) / sizeof(wxAcceleratorEntry), entries);
 	SetAcceleratorTable(accel);
 
@@ -191,6 +192,6 @@ void Debugger::Sync() {
 void Debugger::SetStepButtons(bool enable) {
 	m_btn_run->Enable(enable);
 	m_btn_stepinto->Enable(enable);
-	//m_btn_stepover->Enable(enable);
+	m_btn_stepover->Enable(enable);
 	single_step = enable;
 }

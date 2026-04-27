@@ -11,7 +11,7 @@ namespace emxu8 {
 	class U8Decoder {
 		U8Core *core;
 
-	protected:
+	public:
 		enum InstrOp {
 			OP_NONE = 0,
 
@@ -210,7 +210,7 @@ Branch condition.
 			// Arithmetic Instructions
 			{OP_ADD,	0x8001, 0xf00f, {ARG_REG,			0x01, 0x0f00, 8},	{ARG_REG,			0x01, 0x00f0, 4}},	// ADD		Rn,		Rm
 			{OP_ADD,	0x1000, 0xf000, {ARG_REG,			0x01, 0x0f00, 8},	{ARG_NUM,			0x08, 0x00ff, 0}},	// ADD		Rn,		#imm8
-			{OP_ADD,	0xf006, 0xf00f, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_REG,			0x02, 0x00e0, 4}},	// ADD		ERn,	ERm
+			{OP_ADD,	0xf006, 0xf11f, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_REG,			0x02, 0x00e0, 4}},	// ADD		ERn,	ERm
 			{OP_ADD,	0xe080, 0xf180, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_NUM,			0x07, 0x007f, 0}},	// ADD		ERn,	#imm7
 			{OP_ADDC,	0x8006, 0xf00f, {ARG_REG,			0x01, 0x0f00, 8},	{ARG_REG,			0x01, 0x00f0, 4}},	// ADDC		Rn,		Rm
 			{OP_ADDC,	0x6000, 0xf000, {ARG_REG,			0x01, 0x0f00, 8},	{ARG_NUM,			0x08, 0x00ff, 0}},	// ADDC		Rn,		#imm8
@@ -222,13 +222,13 @@ Branch condition.
 			{OP_CMPC,	0x5000, 0xf000, {ARG_REG,			0x01, 0x0f00, 8},	{ARG_NUM,			0x08, 0x00ff, 0}},	// CMPC		Rn,		#imm8
 			{OP_MOV,	0x8000, 0xf00f, {ARG_REG,			0x01, 0x0f00, 8},	{ARG_REG,			0x01, 0x00f0, 4}},	// MOV		Rn,		Rm
 			{OP_MOV,	0x0000, 0xf000, {ARG_REG,			0x01, 0x0f00, 8},	{ARG_NUM,			0x08, 0x00ff, 0}},	// MOV		Rn,		#imm8
-			{OP_MOV,	0xf005, 0xf00f, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_REG,			0x02, 0x00e0, 4}},	// MOV		ERn,	ERm
-			{OP_MOV,	0xe000, 0xf080, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_NUM,			0x07, 0x007f, 0}},	// MOV		ERn,	#imm7
+			{OP_MOV,	0xf005, 0xf11f, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_REG,			0x02, 0x00e0, 4}},	// MOV		ERn,	ERm
+			{OP_MOV,	0xe000, 0xf180, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_NUM,			0x07, 0x007f, 0}},	// MOV		ERn,	#imm7
 			{OP_OR,		0x8003, 0xf00f, {ARG_REG,			0x01, 0x0f00, 8},	{ARG_REG,			0x01, 0x00f0, 4}},	// OR		Rn,		Rm
 			{OP_OR,		0x3000, 0xf000, {ARG_REG,			0x01, 0x0f00, 8},	{ARG_NUM,			0x08, 0x00ff, 0}},	// OR		Rn,		#imm8
 			{OP_XOR,	0x8004, 0xf00f, {ARG_REG,			0x01, 0x0f00, 8},	{ARG_REG,			0x01, 0x00f0, 4}},	// XOR		Rn,		Rm
 			{OP_XOR,	0x4000, 0xf000, {ARG_REG,			0x01, 0x0f00, 8},	{ARG_NUM,			0x08, 0x00ff, 0}},	// XOR		Rn,		#imm8
-			{OP_CMP,	0xf007, 0xf00f, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_REG,			0x02, 0x00e0, 4}},	// CMP		ERn,	ERm
+			{OP_CMP,	0xf007, 0xf11f, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_REG,			0x02, 0x00e0, 4}},	// CMP		ERn,	ERm
 			{OP_SUB,	0x8008, 0xf00f, {ARG_REG,			0x01, 0x0f00, 8},	{ARG_REG,			0x01, 0x00f0, 4}},	// SUB		Rn,		Rm
 			{OP_SUBC,	0x8009, 0xf00f, {ARG_REG,			0x01, 0x0f00, 8},	{ARG_REG,			0x01, 0x00f0, 4}},	// SUBC		Rn,		Rm
 
@@ -245,13 +245,13 @@ Branch condition.
 			{OP_SRLC,	0x900d, 0xf00f, {ARG_REG,			0x01, 0x0f00, 8},	{ARG_NUM,			0x03, 0x0070, 4}},	// SRLC		Rn,		#width
 
 			// Load/Store Instructions
-			{OP_L,		0x9032, 0xf0ff, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_PTR_EA}},							// L		ERn,	[EA]
-			{OP_L,		0x9052, 0xf0ff, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_PTR_EA,		0x01}},				// L		ERn,	[EA+]
-			{OP_L,		0x9002, 0xf01f, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_PTR_REG,		0x00, 0x00e0, 4}},	// L		ERn,	[ERm]
-			{OP_L,		0xa008, 0xf01f, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_PTR_REG,		0x01, 0x00e0, 4}},	// L		ERn,	Disp16[ERm]
-			{OP_L,		0xb000, 0xf0c0, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_PTR_BFP_DISP,	0x01, 0x003f, 0}},	// L		ERn,	Disp6[BP]
-			{OP_L,		0xb040, 0xf0c0, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_PTR_BFP_DISP,	0x00, 0x003f, 0}},	// L		ERn,	Disp6[FP]
-			{OP_L,		0x9012, 0xf0ff, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_ADR,			0x01}},				// L		ERn,	Dadr
+			{OP_L,		0x9032, 0xf1ff, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_PTR_EA}},							// L		ERn,	[EA]
+			{OP_L,		0x9052, 0xf1ff, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_PTR_EA,		0x01}},				// L		ERn,	[EA+]
+			{OP_L,		0x9002, 0xf11f, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_PTR_REG,		0x00, 0x00e0, 4}},	// L		ERn,	[ERm]
+			{OP_L,		0xa008, 0xf11f, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_PTR_REG,		0x01, 0x00e0, 4}},	// L		ERn,	Disp16[ERm]
+			{OP_L,		0xb000, 0xf1c0, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_PTR_BFP_DISP,	0x01, 0x003f, 0}},	// L		ERn,	Disp6[BP]
+			{OP_L,		0xb040, 0xf1c0, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_PTR_BFP_DISP,	0x00, 0x003f, 0}},	// L		ERn,	Disp6[FP]
+			{OP_L,		0x9012, 0xf1ff, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_ADR,			0x01}},				// L		ERn,	Dadr
 			{OP_L,		0x9030, 0xf0ff, {ARG_REG,			0x01, 0x0f00, 8},	{ARG_PTR_EA}},							// L		Rn,		[EA]
 			{OP_L,		0x9050, 0xf0ff, {ARG_REG,			0x01, 0x0f00, 8},	{ARG_PTR_EA,		0x01}},				// L		Rn,		[EA+]
 			{OP_L,		0x9000, 0xf01f, {ARG_REG,			0x01, 0x0f00, 8},	{ARG_PTR_REG,		0x00, 0x00e0, 4}},	// L		Rn,		[ERm]
@@ -259,17 +259,17 @@ Branch condition.
 			{OP_L,		0xd000, 0xf0c0, {ARG_REG,			0x01, 0x0f00, 8},	{ARG_PTR_BFP_DISP,	0x01, 0x003f, 0}},	// L		Rn,		Disp6[BP]
 			{OP_L,		0xd040, 0xf0c0, {ARG_REG,			0x01, 0x0f00, 8},	{ARG_PTR_BFP_DISP,	0x00, 0x003f, 0}},	// L		Rn,		Disp6[FP]
 			{OP_L,		0x9010, 0xf0ff, {ARG_REG,			0x01, 0x0f00, 8},	{ARG_ADR,			0x01}},				// L		Rn,		Dadr
-			{OP_L,		0x9034, 0xf0ff, {ARG_REG,			0x04, 0x0c00, 8},	{ARG_PTR_EA}},							// L		XRn,	[EA]
-			{OP_L,		0x9054, 0xf0ff, {ARG_REG,			0x04, 0x0c00, 8},	{ARG_PTR_EA,		0x01}},				// L		XRn,	[EA+]
-			{OP_L,		0x9036, 0xf0ff, {ARG_REG,			0x08, 0x0800, 8},	{ARG_PTR_EA}},							// L		QRn,	[EA]
-			{OP_L,		0x9056, 0xf0ff, {ARG_REG,			0x08, 0x0800, 8},	{ARG_PTR_EA,		0x01}},				// L		QRn,	[EA+]
-			{OP_ST,		0x9033, 0xf0ff, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_PTR_EA}},							// ST		ERn,	[EA]
-			{OP_ST,		0x9053, 0xf0ff, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_PTR_EA,		0x01}},				// ST		ERn,	[EA+]
-			{OP_ST,		0x9003, 0xf01f, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_PTR_REG,		0x00, 0x00e0, 4}},	// ST		ERn,	[ERm]
-			{OP_ST,		0xa009, 0xf01f, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_PTR_REG,		0x01, 0x00e0, 4}},	// ST		ERn,	Disp16[ERm]
-			{OP_ST,		0xb080, 0xf0c0, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_PTR_BFP_DISP,	0x01, 0x003f, 0}},	// ST		ERn,	Disp6[BP]
-			{OP_ST,		0xb0c0, 0xf0c0, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_PTR_BFP_DISP,	0x00, 0x003f, 0}},	// ST		ERn,	Disp6[FP]
-			{OP_ST,		0x9013, 0xf0ff, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_ADR,			0x01}},				// ST		ERn,	Dadr
+			{OP_L,		0x9034, 0xf3ff, {ARG_REG,			0x04, 0x0c00, 8},	{ARG_PTR_EA}},							// L		XRn,	[EA]
+			{OP_L,		0x9054, 0xf3ff, {ARG_REG,			0x04, 0x0c00, 8},	{ARG_PTR_EA,		0x01}},				// L		XRn,	[EA+]
+			{OP_L,		0x9036, 0xf7ff, {ARG_REG,			0x08, 0x0800, 8},	{ARG_PTR_EA}},							// L		QRn,	[EA]
+			{OP_L,		0x9056, 0xf7ff, {ARG_REG,			0x08, 0x0800, 8},	{ARG_PTR_EA,		0x01}},				// L		QRn,	[EA+]
+			{OP_ST,		0x9033, 0xf1ff, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_PTR_EA}},							// ST		ERn,	[EA]
+			{OP_ST,		0x9053, 0xf1ff, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_PTR_EA,		0x01}},				// ST		ERn,	[EA+]
+			{OP_ST,		0x9003, 0xf11f, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_PTR_REG,		0x00, 0x00e0, 4}},	// ST		ERn,	[ERm]
+			{OP_ST,		0xa009, 0xf11f, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_PTR_REG,		0x01, 0x00e0, 4}},	// ST		ERn,	Disp16[ERm]
+			{OP_ST,		0xb080, 0xf1c0, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_PTR_BFP_DISP,	0x01, 0x003f, 0}},	// ST		ERn,	Disp6[BP]
+			{OP_ST,		0xb0c0, 0xf1c0, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_PTR_BFP_DISP,	0x00, 0x003f, 0}},	// ST		ERn,	Disp6[FP]
+			{OP_ST,		0x9013, 0xf1ff, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_ADR,			0x01}},				// ST		ERn,	Dadr
 			{OP_ST,		0x9031, 0xf0ff, {ARG_REG,			0x01, 0x0f00, 8},	{ARG_PTR_EA}},							// ST		Rn,		[EA]
 			{OP_ST,		0x9051, 0xf0ff, {ARG_REG,			0x01, 0x0f00, 8},	{ARG_PTR_EA,		0x01}},				// ST		Rn,		[EA+]
 			{OP_ST,		0x9001, 0xf01f, {ARG_REG,			0x01, 0x0f00, 8},	{ARG_PTR_REG,		0x00, 0x00e0, 4}},	// ST		Rn,		[ERm]
@@ -277,60 +277,60 @@ Branch condition.
 			{OP_ST,		0xd080, 0xf0c0, {ARG_REG,			0x01, 0x0f00, 8},	{ARG_PTR_BFP_DISP,	0x01, 0x003f, 0}},	// ST		Rn,		Disp6[BP]
 			{OP_ST,		0xd0c0, 0xf0c0, {ARG_REG,			0x01, 0x0f00, 8},	{ARG_PTR_BFP_DISP,	0x00, 0x003f, 0}},	// ST		Rn,		Disp6[FP]
 			{OP_ST,		0x9011, 0xf0ff, {ARG_REG,			0x01, 0x0f00, 8},	{ARG_ADR,			0x01}},				// ST		Rn,		Dadr
-			{OP_ST,		0x9035, 0xf0ff, {ARG_REG,			0x04, 0x0c00, 8},	{ARG_PTR_EA}},							// ST		XRn,	[EA]
-			{OP_ST,		0x9055, 0xf0ff, {ARG_REG,			0x04, 0x0c00, 8},	{ARG_PTR_EA,		0x01}},				// ST		XRn,	[EA+]
-			{OP_ST,		0x9037, 0xf0ff, {ARG_REG,			0x08, 0x0800, 8},	{ARG_PTR_EA}},							// ST		QRn,	[EA]
-			{OP_ST,		0x9057, 0xf0ff, {ARG_REG,			0x08, 0x0800, 8},	{ARG_PTR_EA,		0x01}},				// ST		QRn,	[EA+]
+			{OP_ST,		0x9035, 0xf3ff, {ARG_REG,			0x04, 0x0c00, 8},	{ARG_PTR_EA}},							// ST		XRn,	[EA]
+			{OP_ST,		0x9055, 0xf3ff, {ARG_REG,			0x04, 0x0c00, 8},	{ARG_PTR_EA,		0x01}},				// ST		XRn,	[EA+]
+			{OP_ST,		0x9037, 0xf7ff, {ARG_REG,			0x08, 0x0800, 8},	{ARG_PTR_EA}},							// ST		QRn,	[EA]
+			{OP_ST,		0x9057, 0xf7ff, {ARG_REG,			0x08, 0x0800, 8},	{ARG_PTR_EA,		0x01}},				// ST		QRn,	[EA+]
 
 			// Control Register Access Instructions
 			{OP_ADD,	0xe100, 0xff00, {ARG_CONREG,		0x00},				{ARG_NUM,			0x08, 0x00ff, 0}},	// ADD		SP,		#signed8
 			{OP_MOV,	0xa00f, 0xff0f, {ARG_CONREG,		0x01},				{ARG_REG,			0x01, 0x00f0, 4}},	// MOV		ECSR,	Rm
-			{OP_MOV,	0xa00d, 0xf0ff, {ARG_CONREG,		0x02},				{ARG_REG,			0x02, 0x0e00, 8}},	// MOV		ELR,	ERm
+			{OP_MOV,	0xa00d, 0xf1ff, {ARG_CONREG,		0x02},				{ARG_REG,			0x02, 0x0e00, 8}},	// MOV		ELR,	ERm
 			{OP_MOV,	0xa00c, 0xff0f, {ARG_CONREG,		0x03},				{ARG_REG,			0x01, 0x00f0, 4}},	// MOV		EPSW,	Rm
-			{OP_MOV,	0xa005, 0xf0ff, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_CONREG,		0x02}},				// MOV		ERn,	ELR
+			{OP_MOV,	0xa005, 0xf1ff, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_CONREG,		0x02}},				// MOV		ERn,	ELR
 			{OP_MOV,	0xa01a, 0xf0ff, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_CONREG,		0x00}},				// MOV		ERn,	SP
 			{OP_MOV,	0xa00b, 0xff0f, {ARG_CONREG,		0x04},				{ARG_REG,			0x01, 0x00f0, 4}},	// MOV		PSW,	Rm
 			{OP_MOV,	0xe900, 0xff00, {ARG_CONREG,		0x04},				{ARG_NUM,			0x08, 0x00ff, 0}},	// MOV		PSW,	#unsigned8
 			{OP_MOV,	0xa007, 0xf0ff, {ARG_REG,			0x01, 0x0f00, 8},	{ARG_CONREG,		0x01}},				// MOV		Rn,		ECSR
 			{OP_MOV,	0xa004, 0xf0ff, {ARG_REG,			0x01, 0x0f00, 8},	{ARG_CONREG,		0x03}},				// MOV		Rn,		EPSW
 			{OP_MOV,	0xa003, 0xf0ff, {ARG_REG,			0x01, 0x0f00, 8},	{ARG_CONREG,		0x04}},				// MOV		Rn,		PSW
-			{OP_MOV,	0xa10a, 0xff0f, {ARG_CONREG,		0x00},				{ARG_REG,			0x02, 0x00e0, 4}},	// MOV		SP,		ERm
+			{OP_MOV,	0xa10a, 0xff1f, {ARG_CONREG,		0x00},				{ARG_REG,			0x02, 0x00e0, 4}},	// MOV		SP,		ERm
 
 			// PUSH/POP Instructions
-			{OP_PUSH,	0xf05e, 0xf0ff, {ARG_REG,			0x02, 0x0e00, 8}},											// PUSH		ERn
-			{OP_PUSH,	0xf07e, 0xf0ff, {ARG_REG,			0x08, 0x0800, 8}},											// PUSH		QRn
+			{OP_PUSH,	0xf05e, 0xf1ff, {ARG_REG,			0x02, 0x0e00, 8}},											// PUSH		ERn
+			{OP_PUSH,	0xf07e, 0xf7ff, {ARG_REG,			0x08, 0x0800, 8}},											// PUSH		QRn
 			{OP_PUSH,	0xf04e, 0xf0ff, {ARG_REG,			0x01, 0x0f00, 8}},											// PUSH		Rn
-			{OP_PUSH,	0xf06e, 0xf0ff, {ARG_REG,			0x04, 0x0c00, 8}},											// PUSH		XRn
+			{OP_PUSH,	0xf06e, 0xf3ff, {ARG_REG,			0x04, 0x0c00, 8}},											// PUSH		XRn
 			{OP_PUSH,	0xf0ce, 0xf0ff, {ARG_PUSH_LIST,		0x00, 0x0f00, 8}},											// PUSH		register_list
-			{OP_POP,	0xf01e, 0xf0ff, {ARG_REG,			0x02, 0x0e00, 8}},											// POP		ERn
-			{OP_POP,	0xf03e, 0xf0ff, {ARG_REG,			0x08, 0x0800, 8}},											// POP		QRn
+			{OP_POP,	0xf01e, 0xf1ff, {ARG_REG,			0x02, 0x0e00, 8}},											// POP		ERn
+			{OP_POP,	0xf03e, 0xf7ff, {ARG_REG,			0x08, 0x0800, 8}},											// POP		QRn
 			{OP_POP,	0xf00e, 0xf0ff, {ARG_REG,			0x01, 0x0f00, 8}},											// POP		Rn
-			{OP_POP,	0xf02e, 0xf0ff, {ARG_REG,			0x04, 0x0c00, 8}},											// POP		XRn
+			{OP_POP,	0xf02e, 0xf3ff, {ARG_REG,			0x04, 0x0c00, 8}},											// POP		XRn
 			{OP_POP,	0xf08e, 0xf0ff, {ARG_POP_LIST,		0x00, 0x0f00, 8}},											// POP		register_list
 
 			// Coprocessor Data Transfer Instructions
 			{OP_MOV,	0xa00e, 0xf00f, {ARG_REG_C,			0x01, 0x0f00, 8},	{ARG_REG,			0x01, 0x00f0, 4}},	// MOV		CRn,	Rm
-			{OP_MOV,	0xf02d, 0xf0ff, {ARG_REG_C,			0x02, 0x0e00, 8},	{ARG_PTR_EA}},							// MOV		CERn,	[EA]
-			{OP_MOV,	0xf03d, 0xf0ff, {ARG_REG_C,			0x02, 0x0e00, 8},	{ARG_PTR_EA,		0x01}},				// MOV		CERn,	[EA+]
+			{OP_MOV,	0xf02d, 0xf1ff, {ARG_REG_C,			0x02, 0x0e00, 8},	{ARG_PTR_EA}},							// MOV		CERn,	[EA]
+			{OP_MOV,	0xf03d, 0xf1ff, {ARG_REG_C,			0x02, 0x0e00, 8},	{ARG_PTR_EA,		0x01}},				// MOV		CERn,	[EA+]
 			{OP_MOV,	0xf00d, 0xf0ff, {ARG_REG_C,			0x01, 0x0f00, 8},	{ARG_PTR_EA}},							// MOV		CRn,	[EA]
 			{OP_MOV,	0xf01d, 0xf0ff, {ARG_REG_C,			0x01, 0x0f00, 8},	{ARG_PTR_EA,		0x01}},				// MOV		CRn,	[EA+]
-			{OP_MOV,	0xf04d, 0xf0ff, {ARG_REG_C,			0x04, 0x0c00, 8},	{ARG_PTR_EA}},							// MOV		CXRn,	[EA]
-			{OP_MOV,	0xf05d, 0xf0ff, {ARG_REG_C,			0x04, 0x0c00, 8},	{ARG_PTR_EA,		0x01}},				// MOV		CXRn,	[EA+]
-			{OP_MOV,	0xf06d, 0xf0ff, {ARG_REG_C,			0x08, 0x0800, 8},	{ARG_PTR_EA}},							// MOV		CQRn,	[EA]
-			{OP_MOV,	0xf07d, 0xf0ff, {ARG_REG_C,			0x08, 0x0800, 8},	{ARG_PTR_EA,		0x01}},				// MOV		CQRn,	[EA+]
+			{OP_MOV,	0xf04d, 0xf3ff, {ARG_REG_C,			0x04, 0x0c00, 8},	{ARG_PTR_EA}},							// MOV		CXRn,	[EA]
+			{OP_MOV,	0xf05d, 0xf3ff, {ARG_REG_C,			0x04, 0x0c00, 8},	{ARG_PTR_EA,		0x01}},				// MOV		CXRn,	[EA+]
+			{OP_MOV,	0xf06d, 0xf7ff, {ARG_REG_C,			0x08, 0x0800, 8},	{ARG_PTR_EA}},							// MOV		CQRn,	[EA]
+			{OP_MOV,	0xf07d, 0xf7ff, {ARG_REG_C,			0x08, 0x0800, 8},	{ARG_PTR_EA,		0x01}},				// MOV		CQRn,	[EA+]
 			{OP_MOV,	0xa006, 0xf00f, {ARG_REG,			0x01, 0x0f00, 8},	{ARG_REG_C,			0x01, 0x00f0, 4}},	// MOV		Rn,		CRm
-			{OP_MOV,	0xf0ad, 0xf0ff, {ARG_PTR_EA},							{ARG_REG_C,			0x02, 0x0e00, 8}},	// MOV		[EA],	CERm
-			{OP_MOV,	0xf0bd, 0xf0ff, {ARG_PTR_EA,		0x01},				{ARG_REG_C,			0x02, 0x0e00, 8}},	// MOV		[EA+],	CERm
+			{OP_MOV,	0xf0ad, 0xf1ff, {ARG_PTR_EA},							{ARG_REG_C,			0x02, 0x0e00, 8}},	// MOV		[EA],	CERm
+			{OP_MOV,	0xf0bd, 0xf1ff, {ARG_PTR_EA,		0x01},				{ARG_REG_C,			0x02, 0x0e00, 8}},	// MOV		[EA+],	CERm
 			{OP_MOV,	0xf08d, 0xf0ff, {ARG_PTR_EA},							{ARG_REG_C,			0x01, 0x0f00, 8}},	// MOV		[EA],	CRm
 			{OP_MOV,	0xf09d, 0xf0ff, {ARG_PTR_EA,		0x01},				{ARG_REG_C,			0x01, 0x0f00, 8}},	// MOV		[EA+],	CRm
-			{OP_MOV,	0xf0cd, 0xf0ff, {ARG_PTR_EA},							{ARG_REG_C,			0x04, 0x0c00, 8}},	// MOV		[EA],	CXRm
-			{OP_MOV,	0xf0dd, 0xf0ff, {ARG_PTR_EA,		0x01},				{ARG_REG_C,			0x04, 0x0c00, 8}},	// MOV		[EA+],	CXRm
-			{OP_MOV,	0xf0ed, 0xf0ff, {ARG_PTR_EA},							{ARG_REG_C,			0x08, 0x0800, 8}},	// MOV		[EA],	CQRm
-			{OP_MOV,	0xf0fd, 0xf0ff, {ARG_PTR_EA,		0x01},				{ARG_REG_C,			0x08, 0x0800, 8}},	// MOV		[EA+],	CQRm
+			{OP_MOV,	0xf0cd, 0xf3ff, {ARG_PTR_EA},							{ARG_REG_C,			0x04, 0x0c00, 8}},	// MOV		[EA],	CXRm
+			{OP_MOV,	0xf0dd, 0xf3ff, {ARG_PTR_EA,		0x01},				{ARG_REG_C,			0x04, 0x0c00, 8}},	// MOV		[EA+],	CXRm
+			{OP_MOV,	0xf0ed, 0xf7ff, {ARG_PTR_EA},							{ARG_REG_C,			0x08, 0x0800, 8}},	// MOV		[EA],	CQRm
+			{OP_MOV,	0xf0fd, 0xf7ff, {ARG_PTR_EA,		0x01},				{ARG_REG_C,			0x08, 0x0800, 8}},	// MOV		[EA+],	CQRm
 
 			// EA Register Data Transfer Instructions
-			{OP_LEA,	0xf00a, 0xff0f, {ARG_PTR_REG,		0x00, 0x00e0, 4}},											// LEA		[ERm]
-			{OP_LEA,	0xf00b, 0xff0f, {ARG_PTR_REG,		0x01, 0x00e0, 4}},											// LEA		Disp16[ERm]
+			{OP_LEA,	0xf00a, 0xff1f, {ARG_PTR_REG,		0x00, 0x00e0, 4}},											// LEA		[ERm]
+			{OP_LEA,	0xf00b, 0xff1f, {ARG_PTR_REG,		0x01, 0x00e0, 4}},											// LEA		Disp16[ERm]
 			{OP_LEA,	0xf00c, 0xffff, {ARG_ADR,			0x01}},														// LEA		Dadr
 
 			// ALU Instructions
@@ -357,7 +357,7 @@ Branch condition.
 			{OP_BC,		0xc000, 0xf000, {ARG_COND,			0x00, 0x0f00, 8},	{ARG_ADR,			0x02, 0x00ff, 0}},	// BC		cond,	Radr
 
 			// Sign Extension Instruction
-			{OP_EXTBW,	0x800f, 0xf00f, {ARG_REG,			0x01, 0x0f00, 8},	{ARG_REG,			0x01, 0x00f0, 4}},	// EXTBW	ERn
+			{OP_EXTBW,	0x810f, 0xf11f, {ARG_REG,			0x01, 0x0f00, 8},	{ARG_REG,			0x01, 0x00f0, 4}},	// EXTBW	ERn
 
 			// Software Interrupt Instructions
 			{OP_SWI,	0xe500, 0xf0ff, {ARG_NUM,			0x06, 0x003f, 0}},											// SWI		#snum
@@ -365,13 +365,13 @@ Branch condition.
 
 			// Branch Instructions
 			{OP_B,		0xf000, 0xf0ff, {ARG_ADR,			0x00, 0x0f00, 8}},											// B		Cadr
-			{OP_B,		0xf002, 0xff0f, {ARG_REG,			0x02, 0x00e0, 4}},											// B		ERn
+			{OP_B,		0xf002, 0xff1f, {ARG_REG,			0x02, 0x00e0, 4}},											// B		ERn
 			{OP_BL,		0xf001, 0xf0ff, {ARG_ADR,			0x00, 0x0f00, 8}},											// BL		Cadr
-			{OP_BL,		0xf003, 0xff0f, {ARG_REG,			0x02, 0x00e0, 4}},											// BL		ERn
+			{OP_BL,		0xf003, 0xff1f, {ARG_REG,			0x02, 0x00e0, 4}},											// BL		ERn
 
 			// Multiplication and Division Instructions
-			{OP_MUL,	0xf004, 0xf00f, {ARG_REG,			0x02, 0x00e0, 4},	{ARG_REG,			0x01, 0x00f0, 4}},	// MUL		ERn,	Rm
-			{OP_DIV,	0xf009, 0xf00f, {ARG_REG,			0x02, 0x00e0, 4},	{ARG_REG,			0x01, 0x00f0, 4}},	// DIV		ERn,	Rm
+			{OP_MUL,	0xf004, 0xf10f, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_REG,			0x01, 0x00f0, 4}},	// MUL		ERn,	Rm
+			{OP_DIV,	0xf009, 0xf10f, {ARG_REG,			0x02, 0x0e00, 8},	{ARG_REG,			0x01, 0x00f0, 4}},	// DIV		ERn,	Rm
 
 			// Miscellaneous
 			{OP_INC,	0xfe2f,	0xffff},																				// INC		[EA]

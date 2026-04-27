@@ -16,6 +16,7 @@ static void WriteIE(U8Core *core, uint16_t addr, uint8_t val) {
 }
 
 static void WriteIRQ(U8Core *core, uint16_t addr, uint8_t val) {
+	core->sfrs[addr] = val;
 	for (uint8_t i = 0; i < 8; i++) {
 		uint16_t idx = addr - core->interrupter->irq_start;
 		uint16_t vector_addr = core->interrupter->GetIRQVectorAddress(addr, i);
@@ -37,28 +38,34 @@ void U8Interrupter::TryRaiseInterrupt(const uint16_t idx, const uint8_t bit) {
 	uint8_t elevel;
 	uint16_t vector_addr;
 	interrupt intr;
-	if (bit == 9) {
-		intr = {4, "BRK"};
-		vector_addr = 4;
-		cond = true;
-		elevel = 2;
-	} else if (bit == 8) {
-		vector_addr = 0x80 + idx * 2;
-		intr = {vector_addr, std::format("SWI #{}", static_cast<unsigned int>(idx))};
-		cond = true;
-		elevel = 1;
-	} else {
-		cond = core->sfrs[ie_start + idx] & 1 << bit && !mask_int;
-		intr = interrupts[idx][bit];
-		vector_addr = intr.vector_addr;
-		if (vector_addr == 6) {
-			cond = cond && core->psw.elevel >= 2;
+	switch (bit) {
+		case 9:
+			intr = {4, "BRK"};
+			vector_addr = 4;
+			cond = true;
 			elevel = 2;
-		}
-		else {
-			cond = cond && core->psw.elevel >= 1 && core->psw.mie;
+			break;
+		case 8:
+			vector_addr = 0x80 + idx * 2;
+			intr = {vector_addr, std::format("SWI #{}", static_cast<unsigned int>(idx))};
+			cond = true;
 			elevel = 1;
-		}
+			break;
+		default:
+			cond = core->sfrs[ie_start + idx] & 1 << bit && !mask_int;
+			intr = interrupts[idx][bit];
+			vector_addr = intr.vector_addr;
+			if (vector_addr == 6) {
+				cond = cond && core->psw.elevel == 3;
+				elevel = 3;
+			} else if (vector_addr == 8) {
+				cond = cond && core->psw.elevel >= 2;
+				elevel = 2;
+			} else {
+				cond = cond && core->psw.mie && core->psw.elevel >= 1;
+				elevel = 1;
+			}
+			break;
 	}
 	if (cond) {
 		mask_int = true;
@@ -69,15 +76,13 @@ void U8Interrupter::TryRaiseInterrupt(const uint16_t idx, const uint8_t bit) {
 		if (elevel == 1) core->psw.mie = false;
 		core->csr = 0;
 		core->pc = core->ReadCodeMemory(vector_addr, 0);
-		if (bit != 9 && bit != 8) {
+		if (bit < 8) {
 			core->sfrs[irq_start + idx] &= ~(1 << bit);
 			core->cycle_count += 3;
 		}
 		callstack.push_back({static_cast<uint32_t>(core->csr << 16 | core->pc), static_cast<uint32_t>(core->ecsr[elevel] << 16 | core->elr[elevel]), 0, intr});
-		core->ClearPipeline();
-		return;
-	}
-	core->sfrs[irq_start + idx] |= 1 << bit;
+	} else core->sfrs[irq_start + idx] |= 1 << bit;
+	if (core->sfrs[ie_start + idx] & 1 << bit) core->active = true;
 }
 
 void U8Interrupter::AddInterrupt(const uint16_t idx, const uint8_t bit, uint16_t vector_addr, const std::string &name) {

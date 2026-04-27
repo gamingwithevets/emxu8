@@ -9,7 +9,7 @@
 
 /*
 emX-U8 - generated GUI code
-Copyright (C) 2025 GamingWithEvets Inc.
+Copyright (C) 2025-2026 GamingWithEvets Inc.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -84,7 +84,7 @@ bool BrkpointPanelBase::Create(wxWindow* parent, wxWindowID id, const wxPoint& p
     m_radio_type2->Enable(false);
     type_sizer->Add(m_radio_type2, wxSizerFlags().Center());
 
-    m_radio_type0 = new wxRadioButton(this, wxID_ANY, _("Execute (Fetch)"));
+    m_radio_type0 = new wxRadioButton(this, wxID_ANY, _("Execute"));
     m_radio_type0->SetValue(true);
     type_sizer->Add(m_radio_type0, wxSizerFlags().Center());
 

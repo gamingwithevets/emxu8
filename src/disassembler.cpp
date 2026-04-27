@@ -78,8 +78,8 @@ const std::string U8Disassembler::mnemonic[] = {
 	"DIV",
 
 	// Miscellaneous
-	"INC",
-	"DEC",
+	"INC [EA]",
+	"DEC [EA]",
 	"RT",
 	"RTI",
 	"NOP",

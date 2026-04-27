@@ -1,12 +1,17 @@
 #include "mcu/mcu.h"
 #include "peripheral/screen.h"
+#include "peripheral/keyboard.h"
+#include "peripheral/clockgen.h"
 #include "gui/gui.h"
 #include "gui/about.h"
+#include "config/config.h"
+#include "config/binary.h"
 #include <cstdio>
 #include <csignal>
 #include <atomic>
 #include <thread>
 #include <chrono>
+#include <fstream>
 #include <emxu8/emxu8.h>
 #include <emxu8/compilerdefs.h>
 #include <wx/wx.h>
@@ -17,6 +22,36 @@
 #include <windows.h>
 #include <dbghelp.h>
 #pragma comment(lib, "dbghelp.lib")
+
+const std::map<SDL_Scancode, SDL_Keycode> shift_keycombos = {
+	{SDL_SCANCODE_1, SDLK_EXCLAIM},
+	{SDL_SCANCODE_2, SDLK_AT},
+	{SDL_SCANCODE_3, SDLK_HASH},
+	{SDL_SCANCODE_4, SDLK_DOLLAR},
+	{SDL_SCANCODE_5, SDLK_PERCENT},
+	{SDL_SCANCODE_6, SDLK_CARET},
+	{SDL_SCANCODE_7, SDLK_AMPERSAND},
+	{SDL_SCANCODE_8, SDLK_ASTERISK},
+	{SDL_SCANCODE_9, SDLK_LEFTPAREN},
+	{SDL_SCANCODE_0, SDLK_RIGHTPAREN},
+	{SDL_SCANCODE_MINUS, SDLK_UNDERSCORE},
+	{SDL_SCANCODE_EQUALS, SDLK_PLUS},
+	{SDL_SCANCODE_SEMICOLON, SDLK_COLON},
+	{SDL_SCANCODE_APOSTROPHE, SDLK_DBLAPOSTROPHE},
+	{SDL_SCANCODE_COMMA, SDLK_LESS},
+	{SDL_SCANCODE_PERIOD, SDLK_GREATER},
+	{SDL_SCANCODE_SLASH, SDLK_QUESTION},
+};
+
+void convert_shift(SDL_Event &event) {
+	if (event.type == SDL_EVENT_KEY_DOWN || event.type == SDL_EVENT_KEY_UP) {
+		const bool *keystate = SDL_GetKeyboardState(nullptr);
+		if (keystate[SDL_SCANCODE_LSHIFT] || keystate[SDL_SCANCODE_RSHIFT]) {
+			auto it = shift_keycombos.find(event.key.scancode);
+			if (it != shift_keycombos.end()) event.key.key = it->second;
+		}
+	}
+}
 
 void traceback_handler(int sig = 0) {
 	fprintf(stderr, "The boner was so big that it could even trash the stack.");
@@ -84,7 +119,7 @@ void sig_handler(int signum) {
 
 class SDLPanel : public wxPanel {
 public:
-	SDLPanel(wxWindow* parent, Screen *screen) : wxPanel(parent, wxID_ANY), screen(screen)
+	SDLPanel(wxWindow* parent, MCU *mcu) : wxPanel(parent, wxID_ANY), mcu(mcu)
 	{
 		SDL_PropertiesID props = SDL_CreateProperties();
 #ifdef __WXMSW__
@@ -97,7 +132,11 @@ public:
 		window = SDL_CreateWindowWithProperties(props);
 		renderer = SDL_CreateRenderer(window, nullptr);
 
-		img_interface = IMG_Load("images/interface_esp_991esp.png");
+		img_interface = IMG_Load(mcu->config->interface_path.c_str());
+		if (img_interface) {
+			mcu->config->width = mcu->config->width ? mcu->config->width : img_interface->w;
+			mcu->config->height = mcu->config->height ? mcu->config->height : img_interface->h;
+		}
 
 		Bind(wxEVT_SIZE, [this](wxSizeEvent &event) {
 			wxSize size = event.GetSize();
@@ -125,11 +164,11 @@ public:
 	void OnTimer(wxTimerEvent &) {
 		SDL_Event event;
 		while (SDL_PollEvent(&event)) {
-			switch (event.type) {
-				case SDL_EVENT_QUIT:
-					Close(true);
-					running = false;
-					break;
+			convert_shift(event);
+			mcu->kb->ProcessEvent(renderer, &event);
+			if (event.type == SDL_EVENT_QUIT || event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED) {
+				Close(true);
+				running = false;
 			}
 		}
 
@@ -142,7 +181,8 @@ public:
 		SDL_Texture *img_interface_t = SDL_CreateTextureFromSurface(renderer, img_interface);
 		SDL_RenderTexture(renderer, img_interface_t, nullptr, nullptr);
 
-		screen->Present(renderer);
+		mcu->screen->Present(renderer);
+		mcu->kb->Render(renderer);
 
 		SDL_RenderPresent(renderer);
 
@@ -151,7 +191,7 @@ public:
 
 	std::atomic<bool> running = true;
 private:
-	Screen *screen = nullptr;
+	MCU *mcu = nullptr;
 	SDL_Window *window = nullptr;
 	SDL_Renderer *renderer = nullptr;
 	SDL_Surface *img_interface = nullptr;
@@ -161,6 +201,7 @@ private:
 class MainFrame : public wxFrame {
 	enum {
 		ID_DEBUG_DEBUGGER = wxID_HIGHEST + 1,
+		ID_DEBUG_HEXED,
 		ID_DEBUG_BRKPOINT,
 		ID_HARD_RESET,
 	};
@@ -172,22 +213,27 @@ public:
 		CreateMenuBar();
 		Bind(wxEVT_MENU, &MainFrame::OnAbout, this, wxID_ABOUT);
 		Bind(wxEVT_MENU, &MainFrame::OnDebugger, this, ID_DEBUG_DEBUGGER);
+		Bind(wxEVT_MENU, &MainFrame::OnHexEd, this, ID_DEBUG_HEXED);
 		Bind(wxEVT_MENU, &MainFrame::OnBrkpoint, this, ID_DEBUG_BRKPOINT);
 		Bind(wxEVT_MENU, &MainFrame::OnReset, this, wxID_RESET);
 		Bind(wxEVT_MENU, &MainFrame::OnHardReset, this, ID_HARD_RESET);
 		Bind(wxEVT_CLOSE_WINDOW, &MainFrame::OnExit, this);
 
+		std::ifstream is("configs/config_fx570esp.bin", std::ifstream::binary);
+		static Config config{};
+		Binary::Read(is, config);
+
 		uint8_t rom[0x100000];
 		memset(rom, 0xff, sizeof(rom));
-		FILE *f = fopen("roms/GY454XE .bin", "rb");
+		FILE *f = fopen(config.rom_file.c_str(), "rb");
 		fread(rom, sizeof(uint8_t), sizeof(rom), f);
 
 		signal(SIGABRT, sig_handler);
 		signal(SIGSEGV, sig_handler);
 		signal(SIGFPE, sig_handler);
-		mcu = new MCU(rom, 0x8000, 0x8000, 0xe00);
+		mcu = new MCU(&config, rom, 0x8000, 0x8000, 0xe00);
 
-		sdl_panel = new SDLPanel(this, &mcu->screen);
+		sdl_panel = new SDLPanel(this, mcu);
 	}
 
 	void OnDebuggerBtnRun(wxCommandEvent &) {
@@ -201,17 +247,44 @@ public:
 		}
 	}
 
+	void OnDebuggerBtnStepOver(wxCommandEvent &) {
+		if (single_step) {
+			if (!mcu->core.decoder->decodes.empty()) {
+				auto ins = std::prev(mcu->core.decoder->decodes.end())->second;
+				if (ins.operand == emxu8::U8Decoder::OP_BL) {
+					step_over_mode = true;
+					step_over_brkpoint = mcu->core.executor->cur_pc + (ins.arg1.argtype == emxu8::U8Decoder::ARG_REG ? 2 : 4);
+					SetSingleStep(false);
+					return;
+				}
+			}
+			mcu->Tick();
+			debugger->Sync();
+		}
+	}
+
 	void Run() {
 		cpu_thread = new std::jthread([&] {
 			auto start = std::chrono::steady_clock::now();
+			bool first_run = true;
+			bool brked = false;
 			while (sdl_panel && sdl_panel->running && !single_step && !IsBeingDeleted()) {
 				bool brk = false;
-				if (brkpoint)
-					for (auto &panel : brkpoint->brkpoints)
-						if (panel->enabled && panel->type == BrkpointPanel::EXECUTE && panel->seg == mcu->core.csr && panel->addr == mcu->core.pc) {
-							brk = true;
-							break;
-						}
+
+				if (!first_run) {
+					if (!mcu->core.GetCodeRegion(mcu->core.pc, mcu->core.csr)) brk = true;
+					else if (!brked && !mcu->core.interrupter->callstack.empty() && mcu->core.interrupter->callstack.back().intr.name == "BRK") {
+						brk = true;
+						brked = true;
+					} else if (step_over_mode && step_over_brkpoint == mcu->core.executor->cur_pc) brk = true;
+					else if (brkpoint)
+						for (auto &panel : brkpoint->brkpoints)
+							if (panel->enabled && panel->type == BrkpointPanel::EXECUTE && (panel->seg << 16) + panel->addr == mcu->core.executor->cur_pc) {
+								brk = true;
+								break;
+							}
+				}
+
 
 				if (brk) {
 					CallAfter([this] {
@@ -221,11 +294,12 @@ public:
 					break;
 				}
 				mcu->Tick();
+				first_run = false;
 
 				if (!IsBeingDeleted()) {
 					auto now = std::chrono::steady_clock::now();
 					double elapsed_s = std::chrono::duration<double>(now - start).count();
-					auto target_cycles = static_cast<uint64_t>(elapsed_s * mcu->frequency);
+					auto target_cycles = static_cast<uint64_t>(elapsed_s * mcu->clock_gen->frequency);
 					if (mcu->core.cycle_count > target_cycles) std::this_thread::sleep_for(std::chrono::microseconds(50LL));
 				}
 			}
@@ -251,6 +325,7 @@ private:
 
 		auto *debug_menu = new wxMenu();
 		debug_menu->Append(ID_DEBUG_DEBUGGER, "&Debugger");
+		debug_menu->Append(ID_DEBUG_HEXED, "&Hex editor");
 		debug_menu->Append(ID_DEBUG_BRKPOINT, "&Manage breakpoints");
 		menubar->Append(debug_menu, "&Debug");
 
@@ -272,14 +347,18 @@ private:
 			debugger = new Debugger(&mcu->core, single_step);
 			debugger->m_btn_run->Bind(wxEVT_BUTTON, &MainFrame::OnDebuggerBtnRun, this, debugger->m_btn_run->GetId());
 			debugger->m_btn_stepinto->Bind(wxEVT_BUTTON, &MainFrame::OnDebuggerBtnStepInto, this, debugger->m_btn_stepinto->GetId());
+			debugger->m_btn_stepover->Bind(wxEVT_BUTTON, &MainFrame::OnDebuggerBtnStepOver, this, debugger->m_btn_stepover->GetId());
 		}
 		debugger->Open();
 	}
 
+	void OnHexEd(wxCommandEvent &) {
+		if (!hexed) hexed = new HexEditorDialog(mcu);
+		hexed->Open();
+	}
+
 	void OnBrkpoint(wxCommandEvent &) {
-		if (!brkpoint) {
-			brkpoint = new Brkpoint();
-		}
+		if (!brkpoint) brkpoint = new Brkpoint();
 		brkpoint->Open();
 	}
 
@@ -298,6 +377,7 @@ private:
 		bool old_ss = single_step;
 		if (!old_ss) SetSingleStep(true);
 		mcu->InitializeRAM();
+		memset(mcu->core.sfrs, 0, 0x1000);
 		mcu->Reset();
 		if (!old_ss) SetSingleStep(false);
 		else if (debugger) {
@@ -308,6 +388,7 @@ private:
 
 	void OnExit(wxCloseEvent &event) {
 		if (debugger) debugger->Destroy();
+		if (hexed) hexed->Destroy();
 		if (brkpoint) brkpoint->Destroy();
 		if (sdl_panel) sdl_panel->Destroy();
 		event.Skip();
@@ -318,8 +399,12 @@ private:
 	std::jthread *cpu_thread = nullptr;
 
 	Debugger *debugger = nullptr;
+	HexEditorDialog *hexed = nullptr;
 	Brkpoint *brkpoint = nullptr;
 	std::atomic<bool> single_step = false;
+
+	bool step_over_mode = false;
+	uint32_t step_over_brkpoint;
 };
 
 class App : public wxApp {

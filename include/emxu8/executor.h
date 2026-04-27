@@ -1,9 +1,23 @@
 #pragma once
 
 #include "emxu8.h"
+#include <coroutine>
+#include <exception>
 
 namespace emxu8 {
 	class U8Core;
+
+	struct InstrTask {
+		struct promise_type {
+			InstrTask get_return_object() { return InstrTask{std::coroutine_handle<promise_type>::from_promise(*this)}; }
+			std::suspend_always initial_suspend() { return {}; }
+			std::suspend_always final_suspend() noexcept { return {}; }
+			std::suspend_always yield_value(unsigned int) { return {}; }
+			void return_void() {}
+			void unhandled_exception() { std::terminate(); }
+		};
+		std::coroutine_handle<promise_type> handle;
+	};
 
 	class U8Executor {
 		U8Core *core;
@@ -18,6 +32,9 @@ namespace emxu8 {
 		uint32_t next_pc;
 		int8_t next_dsr = 0;
 	private:
+		InstrTask ExecuteLoop();
+		InstrTask current_task;
+
 		uint8_t Add(uint8_t a, uint8_t b);
 		uint16_t Add(uint16_t a, uint16_t b);
 		uint8_t AddCarry(uint8_t a, uint8_t b);
@@ -32,7 +49,9 @@ namespace emxu8 {
 		int8_t ea_inc = 0;
 		int8_t next_cdsr = 0;
 		uint8_t cur_dsr = 0;
+		bool task_running = false;
 
 		friend class U8Interrupter;
+		friend class U8Core;
 	};
 }

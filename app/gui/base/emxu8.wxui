@@ -7,7 +7,7 @@
     internationalize="1"
     base_directory="."
     derived_directory=".."
-    src_preamble="/*@@   emX-U8 - generated GUI code@@    Copyright (C) 2025 GamingWithEvets Inc.@@@@    This program is free software: you can redistribute it and/or modify@@    it under the terms of the GNU General Public License as published by@@    the Free Software Foundation, either version 3 of the License, or@@    (at your option) any later version.@@@@    This program is distributed in the hope that it will be useful,@@    but WITHOUT ANY WARRANTY; without even the implied warranty of@@    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the@@    GNU General Public License for more details.@@@@    You should have received a copy of the GNU General Public License@@    along with this program.  If not, see &lt;https://www.gnu.org/licenses/>.@@*/"
+    src_preamble="/*@@   emX-U8 - generated GUI code@@    Copyright (C) 2025-2026 GamingWithEvets Inc.@@@@    This program is free software: you can redistribute it and/or modify@@    it under the terms of the GNU General Public License as published by@@    the Free Software Foundation, either version 3 of the License, or@@    (at your option) any later version.@@@@    This program is distributed in the hope that it will be useful,@@    but WITHOUT ANY WARRANTY; without even the implied warranty of@@    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the@@    GNU General Public License for more details.@@@@    You should have received a copy of the GNU General Public License@@    along with this program.  If not, see &lt;https://www.gnu.org/licenses/>.@@*/"
     wxWidgets_version="3.2">
     <node
       class="wxDialog"
@@ -579,7 +579,7 @@
           <node
             class="wxRadioButton"
             checked="1"
-            label="Execute (Fetch)"
+            label="Execute"
             var_name="m_radio_type0"
             alignment="wxALIGN_CENTER"
             borders=""

@@ -63,6 +63,8 @@ namespace emxu8 {
 
 		typedef void (*sfr_write)(U8Core *, uint16_t, uint8_t);
 
+		bool reset_requested = false;
+
 	public:
 		U8Core(uint16_t romwin_end);
 
@@ -105,7 +107,8 @@ namespace emxu8 {
 		void RegisterPeripheral(U8Peripheral *obj);
 
 		void Reset();
-		unsigned int Tick();
+		void RequestReset();
+		unsigned int Tick(const bool *run_cond = nullptr);
 		void ClearPipeline();
 
 		bool active = true;
@@ -164,7 +167,7 @@ namespace emxu8 {
 		std::vector<U8Peripheral *> peripherals;
 
 	public:
-		unsigned long cycle_count{};
+		unsigned int cycle_count{};
 		std::mutex mutex;
 
 	protected:
@@ -184,6 +187,6 @@ namespace emxu8 {
 		virtual ~U8Peripheral() = default;
 
 		virtual void Reset() {}
-		virtual int Tick() { return 0; }
+		virtual unsigned int Tick() { return 0; }
 	};
 }
