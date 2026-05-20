@@ -105,8 +105,6 @@ void HexView::OnPaint(wxPaintEvent&) {
 	int startRow = GetViewStart().y;
 	int rowsVisible = height / rowHeight + 1;
 
-	std::lock_guard lock(bufferMutex);
-
 	for (int row = startRow; row < startRow + rowsVisible; row++) {
 		size_t base = row * 16;
 		if (base >= bufferSize) break;
@@ -318,8 +316,6 @@ void HexView::OnChar(wxKeyEvent& e) {
 	if (uc == WXK_NONE || uc < 0)
 		return;
 
-	std::lock_guard lock(bufferMutex);
-
 	// ASCII MODE
 	if (editMode == EditMode::Ascii) {
 		if (std::isprint((unsigned char)uc)) {
@@ -389,8 +385,6 @@ void HexView::OnPaste(wxCommandEvent&) {
 
 	wxString text = data.GetText();
 
-	std::lock_guard lock(bufferMutex);
-
 	size_t idx = editIndex;
 	bool high = true;
 	uint8_t value = 0;
@@ -432,12 +426,17 @@ void HexView::CancelByteEdit() {
 	tempByte = 0;
 }
 
-uint8_t HexView::ReadBuffer(uint32_t addr) const {
-	if (buffer && reinterpret_cast<uintptr_t>(buffer) != -1) return buffer[addr];
+uint8_t HexView::ReadBuffer(uint32_t addr) {
+	if (buffer && reinterpret_cast<uintptr_t>(buffer) != -1) {
+		std::lock_guard lock(bufferMutex);
+		return buffer[addr];
+	}
 	return read(mcu, addr);
 }
 
-void HexView::WriteBuffer(uint32_t addr, uint8_t val) const {
-	if (buffer && reinterpret_cast<uintptr_t>(buffer) != -1)  buffer[addr] = val;
-	write(mcu, addr, val);
+void HexView::WriteBuffer(uint32_t addr, uint8_t val) {
+	if (buffer && reinterpret_cast<uintptr_t>(buffer) != -1) {
+		std::lock_guard lock(bufferMutex);
+		buffer[addr] = val;
+	} else write(mcu, addr, val);
 }

@@ -277,8 +277,10 @@ public:
 					else if (!brked && !mcu->core.interrupter->callstack.empty() && mcu->core.interrupter->callstack.back().intr.name == "BRK") {
 						brk = true;
 						brked = true;
-					} else if (step_over_mode && step_over_brkpoint == mcu->core.executor->cur_pc) brk = true;
-					else if (brkpoint)
+					} else if (step_over_mode && step_over_brkpoint == mcu->core.executor->cur_pc) {
+						brk = true;
+						step_over_mode = false;
+					} else if (brkpoint)
 						for (auto &panel : brkpoint->brkpoints)
 							if (panel->enabled && panel->type == BrkpointPanel::EXECUTE && (panel->seg << 16) + panel->addr == mcu->core.executor->cur_pc) {
 								brk = true;

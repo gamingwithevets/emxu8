@@ -44,17 +44,32 @@ unsigned int ClockGen::Tick() {
 		}
 	}
 
-	if (lsclk_mode && ++lsclk_tick_ctr >= frequency / lsclk_freq + lsclk_freq_add) {
-		lsclk_tick = true;
-		lsclk_tick_ctr = 0;
-		if (lsclk_freq_add != 0) {
-			lsclk_freq_add = 0;
-			lsclk_time_ctr = 0;
+	if (lsclk_mode) {
+		long long current_period;
+		if (frequency > 0) {
+			current_period = (long long)256 * lsclk_freq / frequency;
+			// Ensure a minimum period of 1 to avoid division by zero or infinite speed if frequency is extremely high
+			if (current_period == 0) current_period = 1;
+		} else if (frequency < 0) {
+			// Negative frequency means RAW speed! Tick every cycle!
+			current_period = 1;
+		} else { // frequency == 0
+			// If frequency is 0, set a very large period to effectively stop the clock
+			current_period = 0x7FFFFFFFFFFFFFFFLL; // Max long long value
 		}
-		if (lsclk_thresh > 0) {
-			if (++lsclk_time_ctr >= lsclk_thresh) lsclk_freq_add = 1;
-		} else if (lsclk_thresh < 0) {
-			if (++lsclk_time_ctr >= -lsclk_thresh) lsclk_freq_add = -1;
+
+		if (++lsclk_tick_ctr >= current_period + lsclk_freq_add) {
+			lsclk_tick = true;
+			lsclk_tick_ctr = 0;
+			if (lsclk_freq_add != 0) {
+				lsclk_freq_add = 0;
+				lsclk_time_ctr = 0;
+			}
+			if (lsclk_thresh > 0) {
+				if (++lsclk_time_ctr >= lsclk_thresh) lsclk_freq_add = 1;
+			} else if (lsclk_thresh < 0) {
+				if (++lsclk_time_ctr >= -lsclk_thresh) lsclk_freq_add = -1;
+			}
 		}
 	}
 	return 0;

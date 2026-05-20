@@ -40,7 +40,7 @@ MCU::MCU(Config *_config, uint8_t *rom, uint16_t romwin_end, uint16_t ramstart, 
 
 	screen = new Screen(&core, config);
 
-	clock_gen = new ClockGen(&core, 256 * 1024);
+	clock_gen = new ClockGen(&core, 16 * 1024);
 	tbc = new TimeBaseCounter();
 
 	standby = new Standby();

@@ -12,7 +12,6 @@ constexpr static T from_buf(const uint8_t* data) {
 
 Debugger::Debugger(emxu8::U8Core *_core, bool single_step) : core(_core) {
 	Create(nullptr);
-	SetStepButtons(single_step);
 
 	wxAcceleratorEntry entries[3];
 	entries[0].Set(wxACCEL_NORMAL, WXK_F9, m_btn_run->GetId());
@@ -108,6 +107,8 @@ Debugger::Debugger(emxu8::U8Core *_core, bool single_step) : core(_core) {
 	}
 	m_epsw_sizer->AddStretchSpacer();
 
+	SetStepButtons(single_step);
+
 	disassembler = new emxu8::U8Disassembler(core);
 }
 
@@ -193,5 +194,27 @@ void Debugger::SetStepButtons(bool enable) {
 	m_btn_run->Enable(enable);
 	m_btn_stepinto->Enable(enable);
 	m_btn_stepover->Enable(enable);
+
+	for (uint8_t i = 0; i < 16; i++) m_r[i]->Enable(enable);
+	m_csr->Enable(enable);
+	m_pc->Enable(enable);
+	m_sp->Enable(enable);
+	m_dsr->Enable(enable);
+	m_ea->Enable(enable);
+	m_next_dsr->Enable(enable);
+	m_psw->Enable(enable);
+	m_psw_c->Enable(enable);
+	m_psw_z->Enable(enable);
+	m_psw_s->Enable(enable);
+	m_psw_ov->Enable(enable);
+	m_psw_mie->Enable(enable);
+	m_psw_hc->Enable(enable);
+	m_psw_elevel->Enable(enable);
+	for (uint8_t i = 0; i < 4; i++) {
+		m_lcsr[i]->Enable(enable);
+		m_lr[i]->Enable(enable);
+		if (i > 0) m_epsw[i-1]->Enable(enable);
+	}
+
 	single_step = enable;
 }

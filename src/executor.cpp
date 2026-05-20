@@ -371,8 +371,7 @@ InstrTask U8Executor::ExecuteLoop() {
 			uint16_t a = core->r[instr.arg1.value] | core->r[np1] << 8;
 			core->psw.c = core->r[instr.arg1.value] & 1 << (b - 1);
 			a >>= b;
-			core->r[instr.arg1.value] = a >> 8;
-			core->r[np1] = a;
+			core->r[instr.arg1.value] = a;
 			current_task_cycle_count = 1 + ea_inc;
 			break;
 		}

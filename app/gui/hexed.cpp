@@ -17,7 +17,7 @@ void write_sfr(MCU *mcu, uint16_t addr, uint8_t val) {
 HexEditorDialog::HexEditorDialog(MCU *_mcu)
 	: mcu(_mcu), wxDialog(nullptr, wxID_ANY,
 			   "Hex Editor",
-			   wxDefaultPosition, wxSize(815, 600),
+			   wxDefaultPosition, wxSize(815, 610),
 			   wxDEFAULT_DIALOG_STYLE)
 {
 

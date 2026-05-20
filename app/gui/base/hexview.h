@@ -44,8 +44,8 @@ private:
 	wxRect ByteRect(size_t index) const;
 	void EnsureCaretVisible();
 	void CancelByteEdit();
-	uint8_t ReadBuffer(uint32_t addr) const;
-	void WriteBuffer(uint32_t addr, uint8_t val) const;
+	uint8_t ReadBuffer(uint32_t addr);
+	void WriteBuffer(uint32_t addr, uint8_t val);
 
 	uint8_t* buffer = nullptr;
 	size_t   bufferSize = 0;
