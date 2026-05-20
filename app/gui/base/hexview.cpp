@@ -6,8 +6,8 @@
 #include <algorithm>
 #include <cctype>
 
-HexView::HexView(wxWindow* parent)
-	: wxScrolledWindow(parent)
+HexView::HexView(wxWindow* parent, MCU *mcu)
+	: wxScrolledWindow(parent), mcu(mcu)
 {
 	SetBackgroundStyle(wxBG_STYLE_PAINT);
 	SetWindowStyleFlag(GetWindowStyleFlag() | wxWANTS_CHARS);
@@ -58,20 +58,46 @@ void HexView::SetBuffer(uint8_t* buf, size_t size, uint32_t addr) {
 	Refresh(false);
 }
 
+void HexView::SetBuffer(readtype _read, writetype _write, size_t size, uint32_t addr) {
+	buffer = reinterpret_cast<uint8_t *>(-1);
+	read = _read;
+	write = _write;
+	bufferSize = size;
+	baseAddress = addr;
+
+	caret = anchor = editIndex = 0;
+
+	SetVirtualSize(0, ((size + 15) / 16) * rowHeight);
+	Scroll(0, 0);
+
+	SetFocus();
+	Refresh(false);
+}
+
 void HexView::OnEraseBackground(wxEraseEvent&) {
 }
 
 void HexView::OnPaint(wxPaintEvent&) {
 	wxAutoBufferedPaintDC dc(this);
-	PrepareDC(dc);
 
 	dc.SetBackground(wxBrush(wxColour(255, 255, 255)));
 	dc.Clear();
 
-	if (!buffer) return;
-
 	wxFont font(10, wxFONTFAMILY_TELETYPE, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
 	dc.SetFont(font);
+
+	int headerY = 0;
+
+	dc.SetTextForeground(wxColour(128, 128, 128));
+	dc.DrawText( wxString("Address"), 5, headerY);
+	for (int col = 0; col < 16; col++) {
+		int x = HEX_X + col * HEX_W;
+		dc.DrawText(wxString::Format("%02X", col), x, headerY);
+	}
+	dc.DrawText(wxString("Decoded text"), ASCII_X, headerY);
+
+	if (!buffer) return;
+	PrepareDC(dc);
 
 	int width, height;
 	GetClientSize(&width, &height);
@@ -85,7 +111,7 @@ void HexView::OnPaint(wxPaintEvent&) {
 		size_t base = row * 16;
 		if (base >= bufferSize) break;
 
-		int y = row * rowHeight;
+		int y = (row + 1) * rowHeight;
 
 		// Address
 		dc.SetTextForeground(wxColour(0, 0, 255));
@@ -99,7 +125,7 @@ void HexView::OnPaint(wxPaintEvent&) {
 			size_t idx = base + col;
 			if (idx >= bufferSize) break;
 
-			int x = 90 + col * 30;
+			int x = HEX_X + col * HEX_W;
 
 			bool selected =
 				idx >= std::min(caret, anchor) &&
@@ -124,7 +150,7 @@ void HexView::OnPaint(wxPaintEvent&) {
 			} else {
 				if (selected && editMode == EditMode::Hex) dc.SetTextForeground(wxColour(255, 255, 255));
 				else dc.SetTextForeground(wxColour(0, 0, 0));
-				dc.DrawText(wxString::Format("%02X", buffer[idx]), x, y);
+				dc.DrawText(wxString::Format("%02X", ReadBuffer(idx)), x, y);
 			}
 		}
 
@@ -151,7 +177,7 @@ void HexView::OnPaint(wxPaintEvent&) {
 				dc.DrawRectangle(x - 2, y - 1, ASCII_W + 2, rowHeight + 2);
 			}
 
-			unsigned char c = buffer[idx];
+			unsigned char c = ReadBuffer(idx);
 			wxChar ch = std::isprint(c) ? (wxChar)c : '.';
 
 			if (selected && editMode == EditMode::Ascii) dc.SetTextForeground(wxColour(255, 255, 255));
@@ -164,10 +190,13 @@ void HexView::OnPaint(wxPaintEvent&) {
 void HexView::OnLeftDown(wxMouseEvent& e) {
 	SetFocus();
 
+	if (e.GetY() < rowHeight) return;
+
 	int xx, yy;
-	CalcUnscrolledPosition(e.GetX(), e.GetY(), &xx, &yy);
+	CalcUnscrolledPosition(e.GetX(), e.GetY() - rowHeight, &xx, &yy);
 
 	int row = yy / rowHeight;
+	if (row < 0) return;
 
 	bool inHex   = xx >= HEX_X && xx < HEX_X + 16 * HEX_W;
 	bool inAscii = xx >= ASCII_X && xx < ASCII_X + 16 * ASCII_W;
@@ -203,12 +232,14 @@ void HexView::OnLeftDown(wxMouseEvent& e) {
 void HexView::OnMouseMove(wxMouseEvent& e) {
 	if (!dragging || !e.LeftIsDown())
 		return;
+	if (e.GetY() < rowHeight) return;
 
 	int xx, yy;
-	CalcUnscrolledPosition(e.GetX(), e.GetY(), &xx, &yy);
+	CalcUnscrolledPosition(e.GetX(), e.GetY() - rowHeight, &xx, &yy);
 
 	int row = yy / rowHeight;
-	int col = (xx - 90) / 30;
+	if (row < 0) return;
+	int col = (xx - HEX_X) / HEX_W;
 
 	if (col < 0 || col >= 16) return;
 
@@ -292,7 +323,7 @@ void HexView::OnChar(wxKeyEvent& e) {
 	// ASCII MODE
 	if (editMode == EditMode::Ascii) {
 		if (std::isprint((unsigned char)uc)) {
-			buffer[caret] = (uint8_t)uc;
+			WriteBuffer(caret, (uint8_t)uc);
 			CancelByteEdit();
 
 			if (caret + 1 < bufferSize)
@@ -317,7 +348,7 @@ void HexView::OnChar(wxKeyEvent& e) {
 		editingByte = true;
 	} else {
 		tempByte |= (uint8_t)nibble;
-		buffer[editIndex] = tempByte;
+		WriteBuffer(editIndex, tempByte);
 
 		editingByte = false;
 
@@ -337,7 +368,7 @@ void HexView::OnCopy(wxCommandEvent&) {
 
 	wxString text;
 	for (size_t i = a; i <= b; i++)
-		text += wxString::Format("%02X ", buffer[i]);
+		text += wxString::Format("%02X ", ReadBuffer(i));
 
 	if (wxTheClipboard->Open()) {
 		wxTheClipboard->SetData(new wxTextDataObject(text));
@@ -378,7 +409,7 @@ void HexView::OnPaste(wxCommandEvent&) {
 		} else {
 			value |= nibble;
 			if (idx < bufferSize)
-				buffer[idx++] = value;
+				WriteBuffer(idx++, value);
 			high = true;
 		}
 	}
@@ -399,4 +430,14 @@ void HexView::OnRefreshTimer(wxTimerEvent&) {
 void HexView::CancelByteEdit() {
 	editingByte = false;
 	tempByte = 0;
+}
+
+uint8_t HexView::ReadBuffer(uint32_t addr) const {
+	if (buffer && reinterpret_cast<uintptr_t>(buffer) != -1) return buffer[addr];
+	return read(mcu, addr);
+}
+
+void HexView::WriteBuffer(uint32_t addr, uint8_t val) const {
+	if (buffer && reinterpret_cast<uintptr_t>(buffer) != -1)  buffer[addr] = val;
+	write(mcu, addr, val);
 }

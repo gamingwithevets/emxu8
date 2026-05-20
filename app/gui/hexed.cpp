@@ -1,6 +1,18 @@
 #include "hexed.h"
 #include <wx/splitter.h>
-#include <cstring>
+#include <mutex>
+
+uint8_t read_sfr(MCU *mcu, uint16_t addr) {
+	std::lock_guard lock(mcu->core.mutex);
+	uint8_t out;
+	mcu->core.ReadDataMemory(addr + 0xf000, 0, 1, &out);
+	return out;
+}
+
+void write_sfr(MCU *mcu, uint16_t addr, uint8_t val) {
+	std::lock_guard lock(mcu->core.mutex);
+	mcu->core.WriteDataMemory(addr + 0xf000, 0, 1, &val);
+}
 
 HexEditorDialog::HexEditorDialog(MCU *_mcu)
 	: mcu(_mcu), wxDialog(nullptr, wxID_ANY,
@@ -9,8 +21,8 @@ HexEditorDialog::HexEditorDialog(MCU *_mcu)
 			   wxDEFAULT_DIALOG_STYLE)
 {
 
-	buffers.push_back({"RAM space", mcu->ram, mcu->ramsize, mcu->ramstart});
-	buffers.push_back({"SFR region", mcu->core.sfrs, 0x1000, 0xf000});
+	buffers.push_back({"RAM space", mcu->ramsize, mcu->ramstart, mcu->ram});
+	buffers.push_back({"SFR region", 0x1000, 0xf000, nullptr, &read_sfr, &write_sfr});
 
 	auto* vbox = new wxBoxSizer(wxVERTICAL);
 
@@ -25,7 +37,7 @@ HexEditorDialog::HexEditorDialog(MCU *_mcu)
 		wxCB_READONLY
 	);
 
-	hex = new HexView(this);
+	hex = new HexView(this, mcu);
 
 	vbox->Add(combo, 0, wxEXPAND | wxALL, 4);
 	vbox->Add(hex, 1, wxEXPAND | wxALL, 4);
@@ -37,7 +49,8 @@ HexEditorDialog::HexEditorDialog(MCU *_mcu)
 
 	combo->Bind(wxEVT_COMBOBOX, [&](wxCommandEvent& e) {
 		auto& b = buffers[e.GetSelection()];
-		hex->SetBuffer(b.data, b.size, b.baseAddress);
+		if (b.data) hex->SetBuffer(b.data, b.size, b.baseAddress);
+		else hex->SetBuffer(b.read, b.write, b.size, b.baseAddress);
 		hex->SetFocus();
 	});
 	combo->Bind(wxEVT_COMBOBOX_CLOSEUP, [&](wxCommandEvent& e) {
@@ -46,7 +59,8 @@ HexEditorDialog::HexEditorDialog(MCU *_mcu)
 	});
 
 	combo->SetSelection(0);
-	hex->SetBuffer(buffers[0].data, buffers[0].size, buffers[0].baseAddress);
+	if (buffers[0].data) hex->SetBuffer(buffers[0].data, buffers[0].size, buffers[0].baseAddress);
+	else hex->SetBuffer(buffers[0].read, buffers[0].write, buffers[0].size, buffers[0].baseAddress);
 	hex->SetFocus();
 }
 
@@ -54,4 +68,3 @@ void HexEditorDialog::Open() {
 	Show();
 	Raise();
 }
-

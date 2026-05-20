@@ -6,9 +6,11 @@
 
 struct Buffer {
 	const char* name;
-	uint8_t* data;
 	size_t size;
 	uint32_t baseAddress;
+	uint8_t* data;
+	readtype read;
+	writetype write;
 };
 
 class HexEditorDialog : public wxDialog {

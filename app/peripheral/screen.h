@@ -9,7 +9,8 @@ struct statusbit {
 };
 
 class Screen : public emxu8::U8Peripheral {
-	SDL_Surface *img_status_bar = nullptr;
+	float status_bar_w = 0, status_bar_h = 0;
+	SDL_Texture *img_status_bar_t = nullptr;
 
 public:
 	Config *config = nullptr;
@@ -23,6 +24,7 @@ public:
 
 	explicit Screen(emxu8::U8Core *core, Config *config);
 	void Reset() override;
+	void InitStatusBarTexture(SDL_Renderer *renderer);
 	void Present(SDL_Renderer *renderer);
 };
 

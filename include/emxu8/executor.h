@@ -31,9 +31,11 @@ namespace emxu8 {
 		uint32_t cur_pc = 0x100000;
 		uint32_t next_pc;
 		int8_t next_dsr = 0;
+		bool task_running = false;
 	private:
 		InstrTask ExecuteLoop();
 		InstrTask current_task;
+		unsigned int current_task_cycle_count;
 
 		uint8_t Add(uint8_t a, uint8_t b);
 		uint16_t Add(uint16_t a, uint16_t b);
@@ -49,7 +51,6 @@ namespace emxu8 {
 		int8_t ea_inc = 0;
 		int8_t next_cdsr = 0;
 		uint8_t cur_dsr = 0;
-		bool task_running = false;
 
 		friend class U8Interrupter;
 		friend class U8Core;

@@ -54,7 +54,7 @@ void convert_shift(SDL_Event &event) {
 }
 
 void traceback_handler(int sig = 0) {
-	fprintf(stderr, "The boner was so big that it could even trash the stack.");
+	fprintf(stderr, "Big boner down the lane");
 	if (sig != 0) printf(" (%d)", sig);
 	fprintf(stderr, "\n");
 }
@@ -190,10 +190,10 @@ public:
 	}
 
 	std::atomic<bool> running = true;
+	SDL_Renderer *renderer = nullptr;
 private:
 	MCU *mcu = nullptr;
 	SDL_Window *window = nullptr;
-	SDL_Renderer *renderer = nullptr;
 	SDL_Surface *img_interface = nullptr;
 	wxTimer *timer = nullptr;
 };
@@ -208,7 +208,6 @@ class MainFrame : public wxFrame {
 public:
 	MainFrame() : wxFrame(nullptr, wxID_ANY, "emX-U8") {
 		SetWindowStyle(wxMINIMIZE_BOX | wxCLOSE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLIP_CHILDREN);
-		SetClientSize({405, 816});
 
 		CreateMenuBar();
 		Bind(wxEVT_MENU, &MainFrame::OnAbout, this, wxID_ABOUT);
@@ -222,6 +221,7 @@ public:
 		std::ifstream is("configs/config_fx570esp.bin", std::ifstream::binary);
 		static Config config{};
 		Binary::Read(is, config);
+		SetClientSize({config.width, config.height});
 
 		uint8_t rom[0x100000];
 		memset(rom, 0xff, sizeof(rom));
@@ -234,6 +234,7 @@ public:
 		mcu = new MCU(&config, rom, 0x8000, 0x8000, 0xe00);
 
 		sdl_panel = new SDLPanel(this, mcu);
+		mcu->screen->InitStatusBarTexture(sdl_panel->renderer);
 	}
 
 	void OnDebuggerBtnRun(wxCommandEvent &) {
@@ -242,7 +243,7 @@ public:
 
 	void OnDebuggerBtnStepInto(wxCommandEvent &) {
 		if (single_step) {
-			mcu->Tick();
+			do { mcu->Tick(); } while (mcu->core.executor->task_running);
 			debugger->Sync();
 		}
 	}
@@ -258,7 +259,7 @@ public:
 					return;
 				}
 			}
-			mcu->Tick();
+			do { mcu->Tick(); } while (mcu->core.executor->task_running);
 			debugger->Sync();
 		}
 	}
