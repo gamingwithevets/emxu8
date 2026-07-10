@@ -270,6 +270,7 @@ std::string U8Disassembler::Disassemble(uint16_t pc, uint8_t csr, uint8_t &ins_l
 				instr.arg2.argtype = ins.arg2.argtype;
 				instr.arg2.flags = ins.arg2.flags;
 				instr.arg2.value = (opcode[0] & ins.arg2.mask) >> ins.arg2.shift;
+				break;
 			}
 
 		if (instr.operand == U8Decoder::OP_DSR) {

@@ -6,15 +6,28 @@
 typedef uint8_t (*readtype)(MCU *, uint16_t);
 typedef void (*writetype)(MCU *, uint16_t, uint8_t);
 
-class HexView : public wxScrolledWindow {
-	static constexpr int ADDR_X   = 5;
-	static constexpr int HEX_X    = 90;
-	static constexpr int HEX_W    = 30;
-	static constexpr int ASCII_X  = HEX_X + 16 * HEX_W + 20;
-	static constexpr int ASCII_W  = 12;
+namespace HexViewLayout {
+	constexpr int ROW_HEIGHT = 18;
+	constexpr int ADDR_X     = 5;
+	constexpr int HEX_X      = 90;
+	constexpr int HEX_W      = 30;
+	constexpr int ASCII_X    = HEX_X + 16 * HEX_W + 20;
+	constexpr int ASCII_W    = 12;
+}
+
+class HexHeader : public wxWindow {
 public:
-	HexView(wxWindow* parent, MCU *mcu);
-	virtual ~HexView();
+	explicit HexHeader(wxWindow* parent);
+
+private:
+	void OnPaint(wxPaintEvent&);
+	void OnEraseBackground(wxEraseEvent&);
+};
+
+class HexGrid : public wxScrolledWindow {
+public:
+	HexGrid(wxWindow* parent, MCU *mcu);
+	virtual ~HexGrid();
 
 	void SetBuffer(uint8_t* buf, size_t size, uint32_t baseAddr);
 	void SetBuffer(readtype _read, writetype _write, size_t size, uint32_t baseAddr);
@@ -39,9 +52,6 @@ private:
 	void OnEraseBackground(wxEraseEvent&);
 	void OnRefreshTimer(wxTimerEvent&);
 
-	size_t HitTest(int x, int y) const;
-	void EditNibble(int nibble);
-	wxRect ByteRect(size_t index) const;
 	void EnsureCaretVisible();
 	void CancelByteEdit();
 	uint8_t ReadBuffer(uint32_t addr);
@@ -60,9 +70,19 @@ private:
 	uint8_t tempByte = 0;
 	bool dragging = false;
 
-	int rowHeight = 18;
-
 	wxTimer refreshTimer;
 
 	std::mutex bufferMutex;
+};
+
+class HexView : public wxPanel {
+public:
+	HexView(wxWindow* parent, MCU *mcu);
+
+	void SetBuffer(uint8_t* buf, size_t size, uint32_t baseAddr);
+	void SetBuffer(readtype _read, writetype _write, size_t size, uint32_t baseAddr);
+
+private:
+	HexHeader* header;
+	HexGrid*   grid;
 };

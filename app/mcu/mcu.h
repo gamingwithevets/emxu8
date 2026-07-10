@@ -25,6 +25,7 @@ public:
 	bool halt = false;
 
 	MCU(Config *, uint8_t *, uint16_t, uint16_t, uint16_t);
+	~MCU();
 	unsigned int Tick();
 	void Reset();
 	void InitializeRAM();

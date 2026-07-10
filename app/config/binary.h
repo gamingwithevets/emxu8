@@ -2,7 +2,7 @@
 
 	Binary Serialization Utility
 	Copyright (C) 2024 telecomadm1145
-	Copyright (C) 2024-2025 GamingWithEvets Inc.
+	Copyright (C) 2024-2026 GamingWithEvets Inc.
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -31,14 +31,6 @@
 #pragma warning(disable : 4267)
 #endif
 
-#if defined(_WIN32) || defined(_WIN64)
-#include <intrin.h>
-#define DEBUG_BREAK() __debugbreak()
-#else
-#include <signal.h>
-#define DEBUG_BREAK() raise(SIGTRAP)
-#endif
-
 template <class T>
 concept trivial = std::is_trivial<T>::value;
 template <class T>
@@ -56,11 +48,9 @@ using ContainerChild = std::remove_cvref_t<decltype(*std::declval<T>().cbegin())
 template <class T>
 concept BinaryVector =
 	requires(T v, typename T::value_type& val, size_t sz) {
-		// 需要大小操作
 		{ v.size() } -> std::convertible_to<std::size_t>;
 		{ v.reserve(sz) } -> std::same_as<void>;
 
-		// 需要只读迭代器
 		{ v.cbegin() } -> std::convertible_to<typename T::const_iterator>;
 		{ v.cend() } -> std::convertible_to<typename T::const_iterator>;
 
@@ -69,21 +59,16 @@ concept BinaryVector =
 template <class T>
 concept BinaryMap =
 	requires(T m) {
-		// 需要键值对类型
 		typename T::key_type;
 		typename T::mapped_type;
 		typename T::value_type;
 
-		// 需要只读迭代器
 		{ m.cbegin() } -> std::convertible_to<typename T::const_iterator>;
 		{ m.cend() } -> std::convertible_to<typename T::const_iterator>;
 	};
 
 // #define _BIN_DBG
 
-/// <summary>
-/// 提供结构化的二进制与stl的转换
-/// </summary>
 class Binary {
 public:
 	static void Write(std::ostream& stm, const BinaryData auto& dat) {
@@ -106,7 +91,7 @@ public:
 		unsigned long long size = 0;
 		Read(stm, size);
 		if (size > 1ULL << 48) {
-			DEBUG_BREAK();
+			printf("WARNING: vector size too big\n");
 		}
 		vec.reserve(size);
 		for (size_t i = 0; i < size; i++) {
@@ -124,15 +109,14 @@ public:
 			Write(stm, data);
 			sz--;
 		}
-		if (sz != 0)
-			DEBUG_BREAK();
+		if (sz != 0) printf("WARNING: vector size mismatch\n");
 	}
 	static void Read(std::istream& stm, BinaryMap auto& map) {
 		using ContainerChild = ::ContainerChild<decltype(map)>;
 		unsigned long long size = 0;
 		Read(stm, size);
 		if (size > 1ULL << 48) {
-			DEBUG_BREAK();
+			printf("WARNING: map size too big\n");
 		}
 		for (size_t i = 0; i < size; i++) {
 			if (stm.eof())
@@ -152,8 +136,7 @@ public:
 			Write(stm, kv.second);
 			sz--;
 		}
-		if (sz != 0)
-			DEBUG_BREAK();
+		if (sz != 0) printf("WARNING: map size mismatch\n");
 	}
 };
 #if defined(_MSC_VER) || defined(_UCRT)

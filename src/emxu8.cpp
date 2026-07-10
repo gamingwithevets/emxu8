@@ -22,9 +22,11 @@ uint16_t U8Core::GetER(uint8_t n) const {
 	n &= ~1;
 	if (n > 15) throw std::invalid_argument("n out of range");
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-	return *reinterpret_cast<uint16_t *>(const_cast<uint8_t *>(&r[n]));
+	uint16_t v;
+	std::memcpy(&v, &r[n], sizeof(v));
+	return v;
 #else
-	return r[n] | r[n + 1] << 8;
+	return static_cast<uint16_t>(r[n]) | static_cast<uint16_t>(r[n + 1]) << 8;
 #endif
 }
 
@@ -32,7 +34,7 @@ void U8Core::SetER(uint8_t n, const uint16_t v) {
 	n &= ~1;
 	if (n > 15) throw std::invalid_argument("n out of range");
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-	*reinterpret_cast<uint16_t *>(&r[n]) = v;
+	std::memcpy(&r[n], &v, sizeof(v));
 #else
 	r[n] = v;
 	r[n + 1] = v >> 8;
@@ -43,9 +45,11 @@ uint32_t U8Core::GetXR(uint8_t n) const {
 	n &= ~0b11;
 	if (n > 15) throw std::invalid_argument("n out of range");
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-	return *reinterpret_cast<uint32_t *>(const_cast<uint8_t *>(&r[n]));
+	uint32_t v;
+	std::memcpy(&v, &r[n], sizeof(v));
+	return v;
 #else
-	return r[n] | r[n + 1] << 8 | r[n + 2] << 16 | r[n + 3] << 24;
+	return static_cast<uint32_t>(r[n]) | static_cast<uint32_t>(r[n + 1]) << 8 | static_cast<uint32_t>(r[n + 2]) << 16 | static_cast<uint32_t>(r[n + 3]) << 24;
 #endif
 }
 
@@ -53,7 +57,7 @@ void U8Core::SetXR(uint8_t n, const uint32_t v) {
 	n &= ~0b11;
 	if (n > 15) throw std::invalid_argument("n out of range");
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-	*reinterpret_cast<uint32_t *>(&r[n]) = v;
+	std::memcpy(&r[n], &v, sizeof(v));
 #else
 	r[n] = v;
 	r[n + 1] = v >> 8;
@@ -66,9 +70,11 @@ uint64_t U8Core::GetQR(uint8_t n) const {
 	n &= ~0b111;
 	if (n > 15) throw std::invalid_argument("n out of range");
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-	return *reinterpret_cast<uint64_t *>(const_cast<uint8_t *>(&r[n]));
+	uint64_t v;
+	std::memcpy(&v, &r[n], sizeof(v));
+	return v;
 #else
-	return r[n] | r[n + 1] << 8 | r[n + 2] << 16 | r[n + 3] << 24 | r[n + 4] << 32 | r[n + 5] << 40 | r[n + 6] << 48 | r[n + 7] << 56;
+	return static_cast<uint64_t>(r[n]) | static_cast<uint64_t>(r[n + 1]) << 8 | static_cast<uint64_t>(r[n + 2]) << 16 | static_cast<uint64_t>(r[n + 3]) << 24 | static_cast<uint64_t>(r[n + 4]) << 32 | static_cast<uint64_t>(r[n + 5]) << 40 | static_cast<uint64_t>(r[n + 6]) << 48 | static_cast<uint64_t>(r[n + 7]) << 56;
 #endif
 }
 
@@ -76,7 +82,7 @@ void U8Core::SetQR(uint8_t n, const uint64_t v) {
 	n &= ~0b111;
 	if (n > 15) throw std::invalid_argument("n out of range");
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-	*reinterpret_cast<uint64_t *>(&r[n]) = v;
+	std::memcpy(&r[n], &v, sizeof(v));
 #else
 	r[n] = v;
 	r[n + 1] = v >> 8;
@@ -154,9 +160,11 @@ uint16_t U8Core::ReadCodeMemory(const uint16_t addr, const uint8_t segment) {
 
 	if (!memory) return 0xffff;
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-	return *reinterpret_cast<uint16_t *>(&memory[_addr]);
+	uint16_t v;
+	std::memcpy(&v, &memory[_addr], sizeof(v));
+	return v;
 #else
-	return memory[_addr] | memory[_addr+1] << 8;
+	return static_cast<uint16_t>(memory[_addr]) | static_cast<uint16_t>(memory[_addr + 1]) << 8;
 #endif
 }
 
@@ -236,9 +244,9 @@ int U8Core::WriteDataMemory(uint16_t addr, const uint8_t segment, uint16_t size,
 	}
 
 	if (memory) {
-		if (segment == 0 && _addr < romwin_end) {
+		if (segment == 0 && addr < romwin_end) {
 			romwin_cycles = size;
-			if (_addr + size >= romwin_end) romwin_cycles = romwin_end - addr;
+			if (addr + size >= romwin_end) romwin_cycles = romwin_end - addr;
 		}
 		for (int i = 0; i < size; i++) {
 			if (_addr + i >= _size) {
@@ -356,6 +364,7 @@ void U8Core::ClearPipeline() {
 	fetcher->Reset();
 	decoder->Reset();
 	executor->Reset();
+	executor->cur_pc = csr << 16 | pc;
 	if (!GetCodeRegion(pc, csr)) printf("[U8Core] WARNING: Jump to unmapped code address (%05X -> %05X)\n", prev_csr_pc, csr << 16 | pc);
 	else if (csr == 0 && pc < 6) printf("[U8Core] WARNING: Jump to vector table (%05X -> %05X)\n", prev_csr_pc, csr << 16 | pc);
 }

@@ -25,7 +25,7 @@ ClockGen::ClockGen(emxu8::U8Core *core, int _frequency) : U8Peripheral(core) {
 	fcon = &core->sfrs[0xa];
 	htbr = &core->sfrs[0xd];
 
-	lsclk_freq = 16384;
+	lsclk_freq = frequency > 0 ? frequency / 32 : 16384;
 	Reset();
 }
 
@@ -47,7 +47,7 @@ unsigned int ClockGen::Tick() {
 	if (lsclk_mode) {
 		long long current_period;
 		if (frequency > 0) {
-			current_period = (long long)256 * lsclk_freq / frequency;
+			current_period = (long long)frequency / lsclk_freq;
 			// Ensure a minimum period of 1 to avoid division by zero or infinite speed if frequency is extremely high
 			if (current_period == 0) current_period = 1;
 		} else if (frequency < 0) {

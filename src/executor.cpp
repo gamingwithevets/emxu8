@@ -17,7 +17,7 @@ constexpr static void to_buf(T value, uint8_t *data) {
 	for (size_t i = 0; i < sizeof(T); ++i) data[i] = static_cast<uint8_t>(value >> (8 * i)); // Little endian
 }
 
-U8Executor::U8Executor(U8Core *core) : core(core), next_pc(0) {}
+U8Executor::U8Executor(U8Core *core) : core(core), next_pc(0x100000) {}
 
 uint8_t U8Executor::Add(uint8_t a, uint8_t b) {
 	uint16_t wide_sum = static_cast<uint16_t>(a) + static_cast<uint16_t>(b);
@@ -83,7 +83,7 @@ uint16_t U8Executor::Subtract(uint16_t a, uint16_t b) {
 uint8_t U8Executor::SubtractCarry(uint8_t a, uint8_t b) {
 	uint8_t c = core->psw.c;
 	uint16_t wide_diff = static_cast<uint16_t>(a) - static_cast<uint16_t>(b) - static_cast<uint16_t>(c);
-	uint16_t result = static_cast<uint8_t>(wide_diff & 0xff);
+	uint8_t result = static_cast<uint8_t>(wide_diff & 0xff);
 
 	core->psw.c = static_cast<uint16_t>(a) < static_cast<uint16_t>(b) + static_cast<uint16_t>(c);
 	SetZSFlags(result, core->psw.z);
@@ -113,7 +113,7 @@ void U8Executor::SetZSFlags(uint64_t result) {
 	core->psw.s = result & 0x8000000000000000;
 }
 
-#define WAIT_CYCLES(c) do { int __c = (c); for (int __i = 0; __i < __c; __i++) co_yield 1; } while (0)
+#define WAIT_CYCLES(c) do { int __c = (c); for (int __i = 1; __i < __c; __i++) co_yield 1; } while (0)
 
 InstrTask U8Executor::ExecuteLoop() {
 	if (pause) {
@@ -126,8 +126,9 @@ InstrTask U8Executor::ExecuteLoop() {
 		WAIT_CYCLES(1);
 		co_return;
 	}
-	cur_pc = std::prev(std::prev(core->decoder->decodes.end()))->first;
-	U8Decoder::instruction instr = std::prev(std::prev(core->decoder->decodes.end()))->second;
+	auto decoded_instr = core->decoder->GetNextExec();
+	cur_pc = decoded_instr.first;
+	U8Decoder::instruction instr = decoded_instr.second.value();
 	current_task_cycle_count = 0;
 
 	auto ReadDataMemory = [&](const uint16_t addr, const uint8_t segment, const uint16_t size, uint8_t *out) -> int {
@@ -223,6 +224,9 @@ InstrTask U8Executor::ExecuteLoop() {
 								case 4: core->r[instr.arg1.value] = core->psw.raw; break;
 								}
 								break;
+							case U8Decoder::ARG_REG_C:
+								core->r[instr.arg1.value] = core->coprocessor->GetR(instr.arg2.value);
+								break;
 							default: break;
 						}
 					} else {
@@ -287,6 +291,11 @@ InstrTask U8Executor::ExecuteLoop() {
 					}
 					break;
 				case U8Decoder::ARG_REG_C: {
+					if (instr.arg2.argtype == U8Decoder::ARG_REG) {
+						core->coprocessor->SetR(instr.arg1.value, core->r[instr.arg2.value]);
+						current_task_cycle_count = 1 + ea_inc;
+						break;
+					}
 					uint8_t buf[8];
 					current_task_cycle_count += ReadDataMemory(core->ea, cur_dsr, instr.arg1.flags, buf);
 					current_task_cycle_count += instr.arg1.flags;
@@ -296,10 +305,10 @@ InstrTask U8Executor::ExecuteLoop() {
 						ea_inc = 2;
 					}
 					switch (instr.arg1.flags) {
-						case 1: core->coprocessor->SetR(instr.arg2.value, buf[0]); break;
-						case 2: core->coprocessor->SetER(instr.arg2.value, from_buf<uint16_t>(buf)); break;
-						case 4: core->coprocessor->SetXR(instr.arg2.value, from_buf<uint32_t>(buf)); break;
-						case 8: core->coprocessor->SetQR(instr.arg2.value, from_buf<uint64_t>(buf)); break;
+						case 1: core->coprocessor->SetR(instr.arg1.value, buf[0]); break;
+						case 2: core->coprocessor->SetER(instr.arg1.value, from_buf<uint16_t>(buf)); break;
+						case 4: core->coprocessor->SetXR(instr.arg1.value, from_buf<uint32_t>(buf)); break;
+						case 8: core->coprocessor->SetQR(instr.arg1.value, from_buf<uint64_t>(buf)); break;
 					}
 					break;
 				}
@@ -334,44 +343,54 @@ InstrTask U8Executor::ExecuteLoop() {
 		}
 		case U8Decoder::OP_SLL: {
 			uint8_t b = instr.arg2.argtype == U8Decoder::ARG_NUM ? instr.arg2.value : core->r[instr.arg2.value] & 7;
-			core->psw.c = core->r[instr.arg1.value] & 1 << (8 - b);
-			core->r[instr.arg1.value] <<= b;
+			if (b) {
+				core->psw.c = core->r[instr.arg1.value] & 1 << (8 - b);
+				core->r[instr.arg1.value] <<= b;
+			}
 			current_task_cycle_count = 1 + ea_inc;
 			break;
 		}
 		case U8Decoder::OP_SLLC: {
 			uint8_t nm1 = instr.arg1.value - 1 & 15;
 			uint8_t b = instr.arg2.argtype == U8Decoder::ARG_NUM ? instr.arg2.value : core->r[instr.arg2.value] & 7;
-			uint16_t a = core->r[instr.arg1.value] << 8 | core->r[nm1];
-			core->psw.c = core->r[instr.arg1.value] & 1 << (8 - b);
-			a <<= b;
-			core->r[instr.arg1.value] = a >> 8;
+			if (b) {
+				uint16_t a = core->r[instr.arg1.value] << 8 | core->r[nm1];
+				core->psw.c = core->r[instr.arg1.value] & 1 << (8 - b);
+				a <<= b;
+				core->r[instr.arg1.value] = a >> 8;
+			}
 			current_task_cycle_count = 1 + ea_inc;
 			break;
 		}
 		case U8Decoder::OP_SRA: {
 			uint8_t b = instr.arg2.argtype == U8Decoder::ARG_NUM ? instr.arg2.value : core->r[instr.arg2.value] & 7;
-			int8_t a = core->r[instr.arg1.value];
-			core->psw.c = core->r[instr.arg1.value] & 1 << (b - 1);
-			a >>= b;
-			core->r[instr.arg1.value] = a;
+			if (b) {
+				core->psw.c = core->r[instr.arg1.value] & 1 << (b - 1);
+				int8_t a = core->r[instr.arg1.value];
+				a >>= b;
+				core->r[instr.arg1.value] = a;
+			}
 			current_task_cycle_count = 1 + ea_inc;
 			break;
 		}
 		case U8Decoder::OP_SRL: {
 			uint8_t b = instr.arg2.argtype == U8Decoder::ARG_NUM ? instr.arg2.value : core->r[instr.arg2.value] & 7;
-			core->psw.c = core->r[instr.arg1.value] & 1 << (b - 1);
-			core->r[instr.arg1.value] >>= b;
+			if (b) {
+				core->psw.c = core->r[instr.arg1.value] & 1 << (b - 1);
+				core->r[instr.arg1.value] >>= b;
+			}
 			current_task_cycle_count = 1 + ea_inc;
 			break;
 		}
 		case U8Decoder::OP_SRLC: {
 			uint8_t np1 = instr.arg1.value + 1 & 15;
 			uint8_t b = instr.arg2.argtype == U8Decoder::ARG_NUM ? instr.arg2.value : core->r[instr.arg2.value] & 7;
-			uint16_t a = core->r[instr.arg1.value] | core->r[np1] << 8;
-			core->psw.c = core->r[instr.arg1.value] & 1 << (b - 1);
-			a >>= b;
-			core->r[instr.arg1.value] = a;
+			if (b) {
+				uint16_t a = core->r[instr.arg1.value] | core->r[np1] << 8;
+				core->psw.c = core->r[instr.arg1.value] & 1 << (b - 1);
+				a >>= b;
+				core->r[instr.arg1.value] = a;
+			}
 			current_task_cycle_count = 1 + ea_inc;
 			break;
 		}
@@ -542,7 +561,7 @@ InstrTask U8Executor::ExecuteLoop() {
 						to_buf(core->lr, buf);
 						core->sp -= 2;
 						current_task_cycle_count += WriteDataMemory(core->sp, 0, 2, buf);
-						core->interrupter->callstack.back().lr_loc = core->sp;
+						if (!core->interrupter->callstack.empty()) core->interrupter->callstack.back().lr_loc = core->sp;
 						current_task_cycle_count += 2;
 					}
 					// EA
@@ -679,7 +698,7 @@ InstrTask U8Executor::ExecuteLoop() {
 				adjustment |= 6;
 				hc = true;
 			}
-			if (val >> 4 > 9 || c) {
+			if (val >> 4 > 9 || (val >> 4 == 9 && (val & 0xf) > 9 && !core->psw.hc) || c) {
 				adjustment |= 0x60;
 				c = true;
 			}
@@ -694,18 +713,22 @@ InstrTask U8Executor::ExecuteLoop() {
 		case U8Decoder::OP_DAS: {
 			uint8_t adjustment = 0;
 			bool hc = false;
+			bool c = core->psw.c;
 			uint8_t val = core->r[instr.arg1.value];
 
 			if ((val & 0xf) > 9 || core->psw.hc) {
 				adjustment |= 6;
 				hc = true;
 			}
-			if (val >> 4 > 9 || core->psw.c) adjustment |= 0x60;
-			int16_t result = static_cast<int16_t>(val) - adjustment;
-			core->r[instr.arg1.value] = result;
-			core->psw.c = result < 0;
+			if (val >> 4 > 9 || core->psw.c) {
+				adjustment |= 0x60;
+				c = true;
+			}
+			val -= adjustment;
+			core->r[instr.arg1.value] = val;
+			core->psw.c = c;
 			core->psw.hc = hc;
-			SetZSFlags(static_cast<uint8_t>(result));
+			SetZSFlags(val);
 			current_task_cycle_count = 1;
 			break;
 		}
@@ -762,7 +785,7 @@ InstrTask U8Executor::ExecuteLoop() {
 			}
 			break;
 		case U8Decoder::OP_TB: {
-			uint8_t val;
+			uint8_t val = 0;
 			switch (instr.arg1.argtype) {
 				case U8Decoder::ARG_ADR: {
 					current_task_cycle_count += ReadDataMemory(word, cur_dsr, 1, &val);
@@ -873,7 +896,7 @@ InstrTask U8Executor::ExecuteLoop() {
 			break;
 		}
 		case U8Decoder::OP_EXTBW: {
-			uint16_t val = sign_extend(core->r[instr.arg2.value], 16);
+			uint16_t val = sign_extend(core->r[instr.arg2.value], 8);
 			core->r[instr.arg1.value] = static_cast<uint8_t>(val >> 8);
 			SetZSFlags(core->r[instr.arg2.value]);
 			current_task_cycle_count = 1;
@@ -974,7 +997,7 @@ InstrTask U8Executor::ExecuteLoop() {
 					break;
 				default: break;
 			}
-			next_dsr = 2;
+			next_dsr = 1;
 			cur_dsr = core->dsr;
 			current_task_cycle_count = 1;
 			break;
@@ -993,7 +1016,7 @@ InstrTask U8Executor::ExecuteLoop() {
 	}
 	if (ea_inc > 0) --ea_inc;
 
-	cur_pc = next_pc >= 0x100000 ? 0x100000 : next_pc;
+	cur_pc = next_pc >= 0x100000 ? core->csr << 16 | core->pc : next_pc;
 
 	WAIT_CYCLES(current_task_cycle_count);
 }
@@ -1003,7 +1026,9 @@ unsigned int U8Executor::Tick() {
 		current_task = ExecuteLoop();
 		task_running = true;
 	}
+	resuming = true;
 	current_task.handle.resume();
+	resuming = false;
 	if (current_task.handle.done()) {
 		current_task.handle.destroy();
 		task_running = false;
@@ -1012,7 +1037,7 @@ unsigned int U8Executor::Tick() {
 }
 
 void U8Executor::Reset() {
-	if (task_running) {
+	if (task_running && !resuming) {
 		current_task.handle.destroy();
 		task_running = false;
 	}

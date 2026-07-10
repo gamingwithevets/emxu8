@@ -2,13 +2,13 @@
 
 #include "decoder.h"
 #include "emxu8.h"
-#include <map>
+#include <deque>
 #include <cstdint>
 
 namespace emxu8 {
 	class U8Core;
 
-	class U8Decoder {
+	class EMXU8_API U8Decoder {
 		U8Core *core;
 
 	public:
@@ -360,7 +360,7 @@ Branch condition.
 			{OP_EXTBW,	0x810f, 0xf11f, {ARG_REG,			0x01, 0x0f00, 8},	{ARG_REG,			0x01, 0x00f0, 4}},	// EXTBW	ERn
 
 			// Software Interrupt Instructions
-			{OP_SWI,	0xe500, 0xf0ff, {ARG_NUM,			0x06, 0x003f, 0}},											// SWI		#snum
+			{OP_SWI,	0xe500, 0xffc0, {ARG_NUM,			0x06, 0x003f, 0}},											// SWI		#snum
 			{OP_BRK,	0xffff, 0xffff},																				// BRK
 
 			// Branch Instructions
@@ -390,8 +390,10 @@ Branch condition.
 		explicit U8Decoder(U8Core *core);
 		void Tick();
 		void Reset();
+		static instruction DecodeOpcode(uint16_t opcode);
+		std::pair<uint32_t, std::optional<instruction>> GetNextExec();
 
-		std::map<uint32_t, instruction> decodes{};
+		std::deque<std::pair<uint32_t, instruction>> decodes{};
 		bool active = true;
 		uint32_t cur_pc = 0x100000;
 

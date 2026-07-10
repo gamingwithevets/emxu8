@@ -36,6 +36,7 @@ namespace emxu8 {
 		InstrTask ExecuteLoop();
 		InstrTask current_task;
 		unsigned int current_task_cycle_count;
+		bool resuming = false;
 
 		uint8_t Add(uint8_t a, uint8_t b);
 		uint16_t Add(uint16_t a, uint16_t b);

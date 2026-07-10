@@ -39,6 +39,4 @@ public:
 	void Render(SDL_Renderer *renderer);
 	unsigned int Tick() override;
 	std::optional<uint8_t> GetButton();
-private:
-	void TickRe(bool *reset, uint8_t *ki, uint8_t kimask, uint8_t ko, uint8_t k);
 };

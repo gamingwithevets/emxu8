@@ -56,13 +56,13 @@ void U8Interrupter::TryRaiseInterrupt(const uint16_t idx, const uint8_t bit) {
 			intr = interrupts[idx][bit];
 			vector_addr = intr.vector_addr;
 			if (vector_addr == 6) {
-				cond = cond && core->psw.elevel == 3;
+				cond = cond && core->psw.elevel <= 3;
 				elevel = 3;
 			} else if (vector_addr == 8) {
-				cond = cond && core->psw.elevel >= 2;
+				cond = cond && core->psw.elevel <= 2;
 				elevel = 2;
 			} else {
-				cond = cond && core->psw.mie && core->psw.elevel >= 1;
+				cond = cond && core->psw.mie && core->psw.elevel <= 1;
 				elevel = 1;
 			}
 			break;
@@ -81,6 +81,7 @@ void U8Interrupter::TryRaiseInterrupt(const uint16_t idx, const uint8_t bit) {
 			core->cycle_count += 3;
 		}
 		callstack.push_back({static_cast<uint32_t>(core->csr << 16 | core->pc), static_cast<uint32_t>(core->ecsr[elevel] << 16 | core->elr[elevel]), 0, intr});
+		core->ClearPipeline();
 	} else core->sfrs[irq_start + idx] |= 1 << bit;
 	if (core->sfrs[ie_start + idx] & 1 << bit) core->active = true;
 }
@@ -89,7 +90,7 @@ void U8Interrupter::AddInterrupt(const uint16_t idx, const uint8_t bit, uint16_t
 	if (bit > 7) throw std::invalid_argument("bit out of range");
 	vector_addr &= ~1;
 	if (vector_addr < 6 || vector_addr > 0x7f) throw std::invalid_argument("vector address out of range");
-	if (interrupts[idx][bit].vector_addr == vector_addr) throw std::invalid_argument("interrupt already exists at this location");
+	if (interrupts[idx][bit].vector_addr != 0) throw std::invalid_argument("interrupt already exists at this location");
 	interrupts[idx][bit] = {vector_addr, name};
 }
 

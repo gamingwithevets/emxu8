@@ -15,10 +15,11 @@ void write_sfr(MCU *mcu, uint16_t addr, uint8_t val) {
 }
 
 HexEditorDialog::HexEditorDialog(MCU *_mcu)
-	: mcu(_mcu), wxDialog(nullptr, wxID_ANY,
+	: wxDialog(nullptr, wxID_ANY,
 			   "Hex Editor",
 			   wxDefaultPosition, wxSize(815, 610),
-			   wxDEFAULT_DIALOG_STYLE)
+			   wxDEFAULT_DIALOG_STYLE),
+	  mcu(_mcu)
 {
 
 	buffers.push_back({"RAM space", mcu->ramsize, mcu->ramstart, mcu->ram});

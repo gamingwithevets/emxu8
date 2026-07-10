@@ -10,6 +10,7 @@ Maintain strict decoupling between the emulation core and the platform-specific 
 * `/src/` - Source files (`.cpp`) for the MCU emulation logic. **No UI, OS-specific, wxWidgets, or SDL3 code allowed here.**
 * `/include/emxu8/` - Public API defining the emulator state, ROM loading, and clock stepping functions.
 * `/app/` - UI components (wxWidgets), render/audio loops (SDL3), and input mapping.
+  * `/app/gui/base/` contains base layouts for GUI windows. **DO NOT** modify the scripts in this directory unless explicitly told to.
 * `/CMakeLists.txt` - The root build script orchestrating both modules.
 
 ## Build system

@@ -6,78 +6,20 @@
 #include <algorithm>
 #include <cctype>
 
-HexView::HexView(wxWindow* parent, MCU *mcu)
-	: wxScrolledWindow(parent), mcu(mcu)
+using namespace HexViewLayout;
+
+HexHeader::HexHeader(wxWindow* parent)
+	: wxWindow(parent, wxID_ANY, wxDefaultPosition, wxSize(-1, ROW_HEIGHT))
 {
 	SetBackgroundStyle(wxBG_STYLE_PAINT);
-	SetWindowStyleFlag(GetWindowStyleFlag() | wxWANTS_CHARS);
-
-	SetScrollRate(0, rowHeight);
-
-	// Keyboard handling
-	Bind(wxEVT_CHAR_HOOK, &HexView::OnChar, this);
-	Bind(wxEVT_KEY_DOWN,  &HexView::OnKeyDown, this);
-
-	// Mouse
-	Bind(wxEVT_LEFT_DOWN, &HexView::OnLeftDown, this);
-	Bind(wxEVT_MOTION, &HexView::OnMouseMove, this);
-	Bind(wxEVT_LEFT_UP, &HexView::OnLeftUp, this);
-
-	// Painting
-	Bind(wxEVT_PAINT, &HexView::OnPaint, this);
-	Bind(wxEVT_ERASE_BACKGROUND, &HexView::OnEraseBackground, this);
-
-	// Clipboard shortcuts
-	wxAcceleratorEntry accels[] = {
-		{ wxACCEL_CTRL, (int)'C', wxID_COPY  },
-		{ wxACCEL_CTRL, (int)'V', wxID_PASTE }
-	};
-	SetAcceleratorTable(wxAcceleratorTable(2, accels));
-
-	Bind(wxEVT_MENU, &HexView::OnCopy,  this, wxID_COPY);
-	Bind(wxEVT_MENU, &HexView::OnPaste, this, wxID_PASTE);
-
-	refreshTimer.SetOwner(this);
-	Bind(wxEVT_TIMER, &HexView::OnRefreshTimer, this);
-	refreshTimer.Start(50); // 20 FPS — smooth but cheap
+	Bind(wxEVT_PAINT, &HexHeader::OnPaint, this);
+	Bind(wxEVT_ERASE_BACKGROUND, &HexHeader::OnEraseBackground, this);
 }
 
-HexView::~HexView() = default;
-
-void HexView::SetBuffer(uint8_t* buf, size_t size, uint32_t addr) {
-	buffer = buf;
-	bufferSize = size;
-	baseAddress = addr;
-
-	caret = anchor = editIndex = 0;
-
-	SetVirtualSize(0, ((size + 15) / 16) * rowHeight);
-	Scroll(0, 0);
-
-	SetFocus();
-	Refresh(false);
+void HexHeader::OnEraseBackground(wxEraseEvent&) {
 }
 
-void HexView::SetBuffer(readtype _read, writetype _write, size_t size, uint32_t addr) {
-	buffer = reinterpret_cast<uint8_t *>(-1);
-	read = _read;
-	write = _write;
-	bufferSize = size;
-	baseAddress = addr;
-
-	caret = anchor = editIndex = 0;
-
-	SetVirtualSize(0, ((size + 15) / 16) * rowHeight);
-	Scroll(0, 0);
-
-	SetFocus();
-	Refresh(false);
-}
-
-void HexView::OnEraseBackground(wxEraseEvent&) {
-}
-
-void HexView::OnPaint(wxPaintEvent&) {
+void HexHeader::OnPaint(wxPaintEvent&) {
 	wxAutoBufferedPaintDC dc(this);
 
 	dc.SetBackground(wxBrush(wxColour(255, 255, 255)));
@@ -86,39 +28,113 @@ void HexView::OnPaint(wxPaintEvent&) {
 	wxFont font(10, wxFONTFAMILY_TELETYPE, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
 	dc.SetFont(font);
 
-	int headerY = 0;
-
 	dc.SetTextForeground(wxColour(128, 128, 128));
-	dc.DrawText( wxString("Address"), 5, headerY);
+	dc.DrawText(wxString("Address"), ADDR_X, 0);
 	for (int col = 0; col < 16; col++) {
 		int x = HEX_X + col * HEX_W;
-		dc.DrawText(wxString::Format("%02X", col), x, headerY);
+		dc.DrawText(wxString::Format("%02X", col), x, 0);
 	}
-	dc.DrawText(wxString("Decoded text"), ASCII_X, headerY);
+	dc.DrawText(wxString("Decoded text"), ASCII_X, 0);
+}
+
+HexGrid::HexGrid(wxWindow* parent, MCU *mcu)
+	: wxScrolledWindow(parent), mcu(mcu)
+{
+	SetBackgroundStyle(wxBG_STYLE_PAINT);
+	SetWindowStyleFlag(GetWindowStyleFlag() | wxWANTS_CHARS);
+
+	SetScrollRate(0, ROW_HEIGHT);
+
+	Bind(wxEVT_CHAR_HOOK, &HexGrid::OnChar, this);
+	Bind(wxEVT_KEY_DOWN,  &HexGrid::OnKeyDown, this);
+
+	Bind(wxEVT_LEFT_DOWN, &HexGrid::OnLeftDown, this);
+	Bind(wxEVT_MOTION, &HexGrid::OnMouseMove, this);
+	Bind(wxEVT_LEFT_UP, &HexGrid::OnLeftUp, this);
+
+	Bind(wxEVT_PAINT, &HexGrid::OnPaint, this);
+	Bind(wxEVT_ERASE_BACKGROUND, &HexGrid::OnEraseBackground, this);
+
+	wxAcceleratorEntry accels[] = {
+		{ wxACCEL_CTRL, (int)'C', wxID_COPY  },
+		{ wxACCEL_CTRL, (int)'V', wxID_PASTE }
+	};
+	SetAcceleratorTable(wxAcceleratorTable(2, accels));
+
+	Bind(wxEVT_MENU, &HexGrid::OnCopy,  this, wxID_COPY);
+	Bind(wxEVT_MENU, &HexGrid::OnPaste, this, wxID_PASTE);
+
+	refreshTimer.SetOwner(this);
+	Bind(wxEVT_TIMER, &HexGrid::OnRefreshTimer, this);
+	refreshTimer.Start(50); // 20 FPS — smooth but cheap
+}
+
+HexGrid::~HexGrid() = default;
+
+void HexGrid::SetBuffer(uint8_t* buf, size_t size, uint32_t addr) {
+	buffer = buf;
+	bufferSize = size;
+	baseAddress = addr;
+
+	caret = anchor = editIndex = 0;
+
+	SetVirtualSize(0, ((size + 15) / 16) * ROW_HEIGHT);
+	Scroll(0, 0);
+
+	SetFocus();
+	Refresh(false);
+}
+
+void HexGrid::SetBuffer(readtype _read, writetype _write, size_t size, uint32_t addr) {
+	buffer = reinterpret_cast<uint8_t *>(-1);
+	read = _read;
+	write = _write;
+	bufferSize = size;
+	baseAddress = addr;
+
+	caret = anchor = editIndex = 0;
+
+	SetVirtualSize(0, ((size + 15) / 16) * ROW_HEIGHT);
+	Scroll(0, 0);
+
+	SetFocus();
+	Refresh(false);
+}
+
+void HexGrid::OnEraseBackground(wxEraseEvent&) {
+}
+
+void HexGrid::OnPaint(wxPaintEvent&) {
+	wxAutoBufferedPaintDC dc(this);
+
+	dc.SetBackground(wxBrush(wxColour(255, 255, 255)));
+	dc.Clear();
 
 	if (!buffer) return;
+
+	wxFont font(10, wxFONTFAMILY_TELETYPE, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
+	dc.SetFont(font);
+
 	PrepareDC(dc);
 
 	int width, height;
 	GetClientSize(&width, &height);
 
 	int startRow = GetViewStart().y;
-	int rowsVisible = height / rowHeight + 1;
+	int rowsVisible = height / ROW_HEIGHT + 1;
 
 	for (int row = startRow; row < startRow + rowsVisible; row++) {
 		size_t base = row * 16;
 		if (base >= bufferSize) break;
 
-		int y = (row + 1) * rowHeight;
+		int y = row * ROW_HEIGHT;
 
-		// Address
 		dc.SetTextForeground(wxColour(0, 0, 255));
 		dc.DrawText(
 			wxString::Format("%06X ", baseAddress + (uint32_t)base),
-			5, y
+			ADDR_X, y
 		);
 
-		// Hex bytes
 		for (int col = 0; col < 16; col++) {
 			size_t idx = base + col;
 			if (idx >= bufferSize) break;
@@ -133,13 +149,13 @@ void HexView::OnPaint(wxPaintEvent&) {
 				if (editMode == EditMode::Hex) dc.SetBrush(wxBrush(wxColour(0, 0x78, 0xd4)));
 				else dc.SetBrush(wxBrush(wxColour(0xc2, 0xde, 0xf3)));
 				dc.SetPen(*wxTRANSPARENT_PEN);
-				dc.DrawRectangle(x - 2, y, 28, rowHeight);
+				dc.DrawRectangle(x - 2, y, 28, ROW_HEIGHT);
 			}
 
 			if (idx == caret && editMode == EditMode::Hex) {
 				dc.SetPen(wxPen(wxColour(0, 0, 0)));
 				dc.SetBrush(*wxTRANSPARENT_BRUSH);
-				dc.DrawRectangle(x - 3, y - 1, 30, rowHeight + 2);
+				dc.DrawRectangle(x - 3, y - 1, 30, ROW_HEIGHT + 2);
 			}
 
 			if (editingByte && idx == editIndex) {
@@ -166,13 +182,13 @@ void HexView::OnPaint(wxPaintEvent&) {
 				if (editMode == EditMode::Ascii) dc.SetBrush(wxBrush(wxColour(0, 0x78, 0xd4)));
 				else dc.SetBrush(wxBrush(wxColour(0xc2, 0xde, 0xf3)));
 				dc.SetPen(*wxTRANSPARENT_PEN);
-				dc.DrawRectangle(x - 1, y, ASCII_W, rowHeight);
+				dc.DrawRectangle(x - 1, y, ASCII_W, ROW_HEIGHT);
 			}
 
 			if (idx == caret && editMode == EditMode::Ascii) {
 				dc.SetPen(wxPen(wxColour(0, 0, 0)));
 				dc.SetBrush(*wxTRANSPARENT_BRUSH);
-				dc.DrawRectangle(x - 2, y - 1, ASCII_W + 2, rowHeight + 2);
+				dc.DrawRectangle(x - 2, y - 1, ASCII_W + 2, ROW_HEIGHT + 2);
 			}
 
 			unsigned char c = ReadBuffer(idx);
@@ -185,15 +201,13 @@ void HexView::OnPaint(wxPaintEvent&) {
 	}
 }
 
-void HexView::OnLeftDown(wxMouseEvent& e) {
+void HexGrid::OnLeftDown(wxMouseEvent& e) {
 	SetFocus();
 
-	if (e.GetY() < rowHeight) return;
-
 	int xx, yy;
-	CalcUnscrolledPosition(e.GetX(), e.GetY() - rowHeight, &xx, &yy);
+	CalcUnscrolledPosition(e.GetX(), e.GetY(), &xx, &yy);
 
-	int row = yy / rowHeight;
+	int row = yy / ROW_HEIGHT;
 	if (row < 0) return;
 
 	bool inHex   = xx >= HEX_X && xx < HEX_X + 16 * HEX_W;
@@ -227,15 +241,14 @@ void HexView::OnLeftDown(wxMouseEvent& e) {
 	Refresh(false);
 }
 
-void HexView::OnMouseMove(wxMouseEvent& e) {
+void HexGrid::OnMouseMove(wxMouseEvent& e) {
 	if (!dragging || !e.LeftIsDown())
 		return;
-	if (e.GetY() < rowHeight) return;
 
 	int xx, yy;
-	CalcUnscrolledPosition(e.GetX(), e.GetY() - rowHeight, &xx, &yy);
+	CalcUnscrolledPosition(e.GetX(), e.GetY(), &xx, &yy);
 
-	int row = yy / rowHeight;
+	int row = yy / ROW_HEIGHT;
 	if (row < 0) return;
 	int col = (xx - HEX_X) / HEX_W;
 
@@ -251,7 +264,7 @@ void HexView::OnMouseMove(wxMouseEvent& e) {
 	}
 }
 
-void HexView::OnLeftUp(wxMouseEvent&) {
+void HexGrid::OnLeftUp(wxMouseEvent&) {
 	if (dragging) {
 		dragging = false;
 		if (HasCapture())
@@ -259,7 +272,7 @@ void HexView::OnLeftUp(wxMouseEvent&) {
 	}
 }
 
-void HexView::OnKeyDown(wxKeyEvent& e) {
+void HexGrid::OnKeyDown(wxKeyEvent& e) {
 	switch (e.GetKeyCode()) {
 		case WXK_LEFT:
 			if (caret > 0) caret--;
@@ -288,14 +301,14 @@ void HexView::OnKeyDown(wxKeyEvent& e) {
 	e.StopPropagation();
 }
 
-void HexView::EnsureCaretVisible() {
+void HexGrid::EnsureCaretVisible() {
 	int viewX, viewY;
 	GetViewStart(&viewX, &viewY);
 
 	int clientW, clientH;
 	GetClientSize(&clientW, &clientH);
 
-	int rowsVisible = clientH / rowHeight;
+	int rowsVisible = clientH / ROW_HEIGHT;
 	int caretRow = caret / 16;
 
 	if (caretRow < viewY) {
@@ -306,7 +319,7 @@ void HexView::EnsureCaretVisible() {
 	}
 }
 
-void HexView::OnChar(wxKeyEvent& e) {
+void HexGrid::OnChar(wxKeyEvent& e) {
 	if (e.ControlDown() || e.AltDown()) {
 		e.Skip();
 		return;
@@ -316,7 +329,6 @@ void HexView::OnChar(wxKeyEvent& e) {
 	if (uc == WXK_NONE || uc < 0)
 		return;
 
-	// ASCII MODE
 	if (editMode == EditMode::Ascii) {
 		if (std::isprint((unsigned char)uc)) {
 			WriteBuffer(caret, (uint8_t)uc);
@@ -331,7 +343,6 @@ void HexView::OnChar(wxKeyEvent& e) {
 		return;
 	}
 
-	// HEX MODE
 	if (!std::isxdigit((unsigned char)uc))
 		return;
 
@@ -356,7 +367,7 @@ void HexView::OnChar(wxKeyEvent& e) {
 	Refresh(false);
 }
 
-void HexView::OnCopy(wxCommandEvent&) {
+void HexGrid::OnCopy(wxCommandEvent&) {
 	if (!buffer) return;
 
 	size_t a = std::min(caret, anchor);
@@ -372,7 +383,7 @@ void HexView::OnCopy(wxCommandEvent&) {
 	}
 }
 
-void HexView::OnPaste(wxCommandEvent&) {
+void HexGrid::OnPaste(wxCommandEvent&) {
 	if (!buffer) return;
 	if (!wxTheClipboard->Open()) return;
 
@@ -414,19 +425,19 @@ void HexView::OnPaste(wxCommandEvent&) {
 	EnsureCaretVisible();
 }
 
-void HexView::OnRefreshTimer(wxTimerEvent&) {
+void HexGrid::OnRefreshTimer(wxTimerEvent&) {
 	if (!buffer)
 		return;
 
 	Refresh(false);
 }
 
-void HexView::CancelByteEdit() {
+void HexGrid::CancelByteEdit() {
 	editingByte = false;
 	tempByte = 0;
 }
 
-uint8_t HexView::ReadBuffer(uint32_t addr) {
+uint8_t HexGrid::ReadBuffer(uint32_t addr) {
 	if (buffer && reinterpret_cast<uintptr_t>(buffer) != -1) {
 		std::lock_guard lock(bufferMutex);
 		return buffer[addr];
@@ -434,9 +445,29 @@ uint8_t HexView::ReadBuffer(uint32_t addr) {
 	return read(mcu, addr);
 }
 
-void HexView::WriteBuffer(uint32_t addr, uint8_t val) {
+void HexGrid::WriteBuffer(uint32_t addr, uint8_t val) {
 	if (buffer && reinterpret_cast<uintptr_t>(buffer) != -1) {
 		std::lock_guard lock(bufferMutex);
 		buffer[addr] = val;
 	} else write(mcu, addr, val);
+}
+
+HexView::HexView(wxWindow* parent, MCU *mcu)
+	: wxPanel(parent)
+{
+	header = new HexHeader(this);
+	grid   = new HexGrid(this, mcu);
+
+	auto* sizer = new wxBoxSizer(wxVERTICAL);
+	sizer->Add(header, 0, wxEXPAND);
+	sizer->Add(grid, 1, wxEXPAND);
+	SetSizer(sizer);
+}
+
+void HexView::SetBuffer(uint8_t* buf, size_t size, uint32_t baseAddr) {
+	grid->SetBuffer(buf, size, baseAddr);
+}
+
+void HexView::SetBuffer(readtype _read, writetype _write, size_t size, uint32_t baseAddr) {
+	grid->SetBuffer(_read, _write, size, baseAddr);
 }

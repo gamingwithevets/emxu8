@@ -38,9 +38,11 @@ MCU::MCU(Config *_config, uint8_t *rom, uint16_t romwin_end, uint16_t ramstart, 
 	core.interrupter->AddInterrupt(1, 3, 0x1e, "I2C0INT");
 	core.interrupter->AddInterrupt(1, 4, 0x20, "I2C1INT");
 
+	core.RegisterSFR(0x18, 1, emxu8::U8Core::DefaultRead<0xff>, emxu8::U8Core::DefaultWrite<0xff>);
+
 	screen = new Screen(&core, config);
 
-	clock_gen = new ClockGen(&core, 16 * 1024);
+	clock_gen = new ClockGen(&core, 512 * 1024);
 	tbc = new TimeBaseCounter();
 
 	standby = new Standby();
@@ -49,6 +51,16 @@ MCU::MCU(Config *_config, uint8_t *rom, uint16_t romwin_end, uint16_t ramstart, 
 	kb = new Keyboard();
 
 	Reset();
+}
+
+MCU::~MCU() {
+	delete kb;
+	delete timer;
+	delete standby;
+	delete tbc;
+	delete clock_gen;
+	delete screen;
+	delete[] ram;
 }
 
 unsigned int MCU::Tick() {
