@@ -12,8 +12,7 @@ AboutDialog::AboutDialog(wxWindow *parent) {
 	m_version->SetLabel(
 		wxString("Version ") + VERSION +
 		"\nCore version " + EMXU8_CORE_VERSION +
-		"\nThis is a VERY early build! There WILL be bugs." +
-		wxString::FromUTF8("\n\n© ") + year_str + " GamingWithEvets Inc."
+		wxString::FromUTF8("\n\n© ") + year_str + " GamingWithEvets Inc.\n"
 	);
 }
 

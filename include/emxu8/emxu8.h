@@ -11,7 +11,7 @@
 #include "executor.h"
 #include "interrupter.h"
 
-#define EMXU8_CORE_VERSION "dev"
+#define EMXU8_CORE_VERSION "0.1.0"
 
 namespace emxu8 {
 	class U8Fetcher;

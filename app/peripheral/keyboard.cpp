@@ -5,7 +5,6 @@ Keyboard::Keyboard() {
 	core->RegisterSFR(0x41, 2, emxu8::U8Core::DefaultRead<0xff>, emxu8::U8Core::DefaultWrite<0xff>);
 	core->RegisterSFR(0x44, 3, emxu8::U8Core::DefaultRead<0xff>, emxu8::U8Core::DefaultWrite<0xff>);
 	core->RegisterSFR(0x47, 1, emxu8::U8Core::DefaultRead<0x83>, emxu8::U8Core::DefaultWrite<0x83>);
-	held_buttons.clear();
 }
 
 void Keyboard::ProcessEvent(SDL_Renderer *renderer, const SDL_Event *e) {

@@ -28,7 +28,7 @@ struct es_stop_info {
 
 class Keyboard : public Peripheral {
 	std::vector<uint8_t> held_buttons;
-	bool mouse_held;
+	bool mouse_held = false;
 	uint8_t held_button_mouse;
 public:
 	es_stop_info emu_kb;
