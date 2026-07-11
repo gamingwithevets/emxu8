@@ -7,6 +7,10 @@ Keyboard::Keyboard() {
 	core->RegisterSFR(0x47, 1, emxu8::U8Core::DefaultRead<0x83>, emxu8::U8Core::DefaultWrite<0x83>);
 }
 
+void Keyboard::Reset() {
+	memset(&core->sfrs[0x41], 0, 6);
+}
+
 void Keyboard::ProcessEvent(SDL_Renderer *renderer, const SDL_Event *e) {
 	SDL_Keycode key;
 	switch (e->type) {
@@ -74,10 +78,18 @@ void Keyboard::Render(SDL_Renderer *renderer) {
 
 unsigned int Keyboard::Tick() {
 	uint8_t kimask = mcu->core.sfrs[0x42];
-	uint8_t ko = (mcu->config->hardware_id == HW_ES || (mcu->config->hardware_id == HW_ES_PLUS && mcu->config->old_esp)) ? (mcu->core.sfrs[0x44] ^ 0xff) : mcu->core.sfrs[0x46];
+	// 16 KO lines. ES and old ES-plus drive them from the inverted 0x44/0x45
+	// pair (no filter). Everything else drives from the 0x46/0x47 pair, gated
+	// by the 0x44/0x45 KO filter (bit 1 = pin cut off from the KO register,
+	// bit 0 = register-controlled; reset state 0 leaves all pins controlled).
+	uint16_t ko;
+	if (mcu->config->hardware_id == HW_ES || (mcu->config->hardware_id == HW_ES_PLUS && mcu->config->old_esp))
+		ko = (mcu->core.sfrs[0x44] | mcu->core.sfrs[0x45] << 8) ^ 0xffff;
+	else
+		ko = (mcu->core.sfrs[0x46] | mcu->core.sfrs[0x47] << 8) & ~(mcu->core.sfrs[0x44] | mcu->core.sfrs[0x45] << 8);
 	bool reset = false;
 
-	struct Component { uint8_t ko_mask, ki_mask; };
+	struct Component { uint16_t ko_mask; uint8_t ki_mask; };
 	Component comps[8];
 	int ncomps = 0;
 
@@ -86,7 +98,7 @@ unsigned int Keyboard::Tick() {
 			reset = true;
 			return;
 		}
-		uint8_t ko_mask = 1 << (k >> 4);
+		uint16_t ko_mask = 1 << (k >> 4);
 		uint8_t ki_mask = 1 << (k & 0xf);
 		int target = -1;
 		for (int i = 0; i < ncomps; ++i) {
@@ -105,7 +117,6 @@ unsigned int Keyboard::Tick() {
 		if (target < 0) comps[ncomps++] = Component{ko_mask, ki_mask};
 	};
 
-	// TODO: use EXICON to determine how KI should be interpreted
 	for (const auto &k : held_buttons) add_key(k);
 	if (mouse_held) add_key(held_button_mouse);
 
@@ -115,7 +126,22 @@ unsigned int Keyboard::Tick() {
 	for (int i = 0; i < ncomps; ++i) {
 		if (comps[i].ko_mask & ko) ki |= comps[i].ki_mask;
 	}
-	if (ki & kimask) mcu->core.interrupter->TryRaiseInterrupt(0, 1);
+
+	// KI pins with pull-up disconnected (0x41 bit set) read idle and raise no
+	// interrupts; their lines still conduct inside the matrix (ghost paths).
+	ki &= ~mcu->core.sfrs[0x41];
+
+	// EXICON (0F018H) bits 1:0 select the KI interrupt condition. KI pins
+	// are active-low, so a falling pin edge is a KI bit going 0->1 (press).
+	uint8_t pending;
+	switch (mcu->core.sfrs[0x18] & 3) {
+		case 0: pending = ki & ~prev_ki; break;  // falling edge (press)
+		case 1: pending = ~ki & prev_ki; break;  // rising edge (release)
+		case 2: pending = ~ki; break;            // level: pin high
+		default: pending = ki; break;            // level: pin low
+	}
+	if (pending & kimask) mcu->core.interrupter->TryRaiseInterrupt(0, 1);
+	prev_ki = ki;
 
 	if (!reset) mcu->core.sfrs[0x40] = ki ^ 0xff;
 

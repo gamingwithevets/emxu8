@@ -30,11 +30,13 @@ class Keyboard : public Peripheral {
 	std::vector<uint8_t> held_buttons;
 	bool mouse_held = false;
 	uint8_t held_button_mouse;
+	uint8_t prev_ki = 0;
 public:
 	es_stop_info emu_kb;
 	bool enable_keypress;
 
 	Keyboard();
+	void Reset() override;
 	void ProcessEvent(SDL_Renderer *renderer, const SDL_Event *e);
 	void Render(SDL_Renderer *renderer);
 	unsigned int Tick() override;
