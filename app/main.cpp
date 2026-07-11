@@ -197,8 +197,8 @@ public:
 		static Config config{};
 		Binary::Read(is, config);
 
-		if (!(config.hardware_id == HW_ES_PLUS && !config.old_esp)) {
-			wxMessageBox("This version of emX-U8 only supports ES PLUS (later versions). Sorry!", "emX-U8");
+		if (!(config.hardware_id == HW_ES_PLUS && config.real_hardware && !config.old_esp)) {
+			wxMessageBox("This version of emX-U8 only supports real ES PLUS (later versions). Sorry!", "emX-U8");
 			CallAfter([this] { Close(true); } );
 			return;
 		}
@@ -252,8 +252,8 @@ public:
 
 	void Run() {
 		if (cpu_thread) {
-			if (cpu_thread->joinable()) cpu_thread->join();
-			delete cpu_thread;
+			printf("WARNING: Attempted to start CPU thread when one already exists\n");
+			return;
 		}
 		cpu_thread = new std::jthread([&] {
 			auto start = std::chrono::steady_clock::now();
@@ -261,8 +261,6 @@ public:
 			bool first_run = true;
 			bool brked = false;
 			while (sdl_panel && sdl_panel->running && !single_step && !IsBeingDeleted()) {
-				if (reset_mode) reset_mode = false;
-
 				bool brk = false;
 				uint32_t xpc = mcu->core.executor->cur_pc;
 
@@ -299,7 +297,6 @@ public:
 						std::chrono::duration<double>(tick_count / (double)mcu->clock_gen->frequency)));
 				}
 			}
-			if (reset_mode && !single_step) CallAfter([this] { Run(); });
 		});
 	}
 
@@ -417,11 +414,7 @@ private:
 
 	void OnExit(wxCloseEvent &event) {
 		if (sdl_panel) sdl_panel->running = false;
-		if (cpu_thread) {
-			if (cpu_thread->joinable()) cpu_thread->join();
-			delete cpu_thread;
-			cpu_thread = nullptr;
-		}
+		SetSingleStep(true);
 		if (debugger) debugger->Destroy();
 		if (hexed) hexed->Destroy();
 		if (brkpoint) brkpoint->Destroy();
